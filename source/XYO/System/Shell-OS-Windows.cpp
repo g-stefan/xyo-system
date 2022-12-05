@@ -478,6 +478,22 @@ namespace XYO::System::Shell {
 		return String::replace(fileOrDirectoryName, "/", pathSeparator);
 	};
 
+	bool getFileSize(const char *fileName, int64_t &size) {
+		HANDLE hFile;
+		hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+		if (hFile == INVALID_HANDLE_VALUE) {
+			return false;
+		};
+		LARGE_INTEGER fileSize;
+		if (!GetFileSizeEx(hFile, &fileSize)) {
+			CloseHandle(hFile);
+			return false;
+		};
+		CloseHandle(hFile);
+		size = fileSize.QuadPart;
+		return true;
+	};
+
 };
 
 #endif

@@ -259,6 +259,14 @@ namespace XYO::System::Shell {
 		return fileOrDirectoryName;
 	};
 
+	bool getFileSize(const char *fileName, int64_t &size) {
+		struct stat statBuf;
+		if (stat64(filename.c_str(), &statBuf) != 0) {
+			return false;
+		};
+		size = stat_buf.st_size;
+		return true;
+	};
 };
 
 #endif

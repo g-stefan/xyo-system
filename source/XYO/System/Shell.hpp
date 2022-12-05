@@ -102,7 +102,8 @@ namespace XYO::System::Shell {
 	XYO_SYSTEM_EXPORT void mainArgsDelete(int cmdN, char **cmdS);
 	XYO_SYSTEM_EXPORT void mainArgsSet(const char *exeName, const char *cmdLine, int &cmdN, char **&cmdS);
 	XYO_SYSTEM_EXPORT void mainArgsSet(const char *cmdLine, int &cmdN, char **&cmdS);
-
+	//
+	XYO_SYSTEM_EXPORT bool getFileSize(const char *fileName, int64_t &size);
 };
 
 #endif
