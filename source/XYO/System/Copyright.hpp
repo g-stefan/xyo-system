@@ -16,7 +16,6 @@ namespace XYO::System::Copyright {
 	XYO_SYSTEM_EXPORT const char *publisher();
 	XYO_SYSTEM_EXPORT const char *company();
 	XYO_SYSTEM_EXPORT const char *contact();
-	XYO_SYSTEM_EXPORT const char *fullCopyright();
 };
 
 #endif
