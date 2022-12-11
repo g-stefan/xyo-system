@@ -260,7 +260,7 @@ namespace XYO::System::Shell {
 	};
 
 	bool getFileSize(const char *fileName, int64_t &size) {
-		struct stat statBuf;
+		struct stat64 statBuf;
 		if (stat64(fileName, &statBuf) != 0) {
 			return false;
 		};
