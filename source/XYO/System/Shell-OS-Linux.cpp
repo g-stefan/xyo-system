@@ -123,7 +123,11 @@ namespace XYO::System::Shell {
 	};
 
 	int system(const char *cmd) {
-		return ::system(cmd);
+		int retV = ::system(cmd);
+		if (retV > 0) {
+			retV = WIFEXITED(retV);
+		};
+		return retV;
 	};
 
 	bool touch(const char *file) {
