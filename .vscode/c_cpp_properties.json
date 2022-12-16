@@ -6,8 +6,8 @@
             "intelliSenseMode": "msvc-x64",
             "includePath": [
                 "${workspaceRoot}/source",                
-                "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.33.31629/atlmfc/include",
-                "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.33.31629/include",
+                "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/atlmfc/include",
+                "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/include",
                 "C:/Program Files (x86)/Windows Kits/NETFXSDK/4.8/include/um",
                 "C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/ucrt",
                 "C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/shared",
@@ -23,8 +23,8 @@
             "browse": {
                 "path": [                    
                     "${workspaceRoot}/source",
-                    "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.33.31629/atlmfc/include",
-                    "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.33.31629/include",
+                    "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/atlmfc/include",
+                    "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/include",
                     "C:/Program Files (x86)/Windows Kits/NETFXSDK/4.8/include/um",
                     "C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/ucrt",
                     "C:/Program Files (x86)/Windows Kits/10/include/10.0.19041.0/shared",
@@ -36,7 +36,7 @@
             },
             "cStandard": "c11",
             "cppStandard": "c++17",
-            "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.33.31629/bin/Hostx64/x64/cl.exe"
+            "compilerPath": "C:/Program Files/Microsoft Visual Studio/2022/Community/VC/Tools/MSVC/14.34.31933/bin/Hostx64/x64/cl.exe"
         },
         {
             "name": "linux",
