@@ -155,6 +155,12 @@ namespace XYO::System {
 		memset(&sInfo, 0, sizeof(STARTUPINFOEX));
 		sInfo.StartupInfo.cb = sizeof(STARTUPINFOEX);
 
+		sInfo.StartupInfo.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+		sInfo.StartupInfo.wShowWindow = SW_SHOW;
+		sInfo.StartupInfo.hStdInput = this_->hStdIn2;
+		sInfo.StartupInfo.hStdOutput = this_->hStdOut2;
+		sInfo.StartupInfo.hStdError = this_->hStdOut2;
+
 		SIZE_T threadAttributeListSize = 0;
 		InitializeProcThreadAttributeList(NULL, 1, 0, &threadAttributeListSize);
 		sInfo.lpAttributeList = (PPROC_THREAD_ATTRIBUTE_LIST)HeapAlloc(GetProcessHeap(), 0, threadAttributeListSize);
