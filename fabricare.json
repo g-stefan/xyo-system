@@ -11,6 +11,8 @@
 		"dependency" : [
 			"xyo-encoding",
 			"xyo-multithreading"
-		]
+		],
+		"hasRelease" : true,
+		"githubRelease" : true
 	}
 }
