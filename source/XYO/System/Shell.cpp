@@ -1196,4 +1196,72 @@ namespace XYO::System::Shell {
 		};
 	};
 
+	bool removeDirContentRecursivelyForce(const String &dirName) {
+		TDynamicArray<String> dirList;
+		TDynamicArray<String> fileList;
+		size_t k, m;
+		ShellFind scan;
+		k = 0;
+		m = 0;
+		String findDir = dirName;
+		findDir += pathSeparator;
+		findDir += "*";
+		if (scan.find(findDir)) {
+			for (; scan; scan.next()) {
+				if (scan.isDirectory) {
+					if (StringCore::isEqual(scan.name, "..")) {
+						continue;
+					};
+					if (StringCore::isEqual(scan.name, ".")) {
+						continue;
+					};
+
+					dirList[k] = dirName;
+					dirList[k] += pathSeparator;
+					dirList[k] += scan.name;
+					++k;
+
+				} else {
+					fileList[m] = dirName;
+					fileList[m] += pathSeparator;
+					fileList[m] += scan.name;
+					++m;
+				};
+			};
+		};
+		//
+		for (k = 0; k < dirList.length(); ++k) {
+			if (!removeDirContentRecursivelyForce(dirList[k])) {
+				return false;
+			};
+			if (!rmdir(dirList[k])) {
+				if (isReadOnly(dirList[k])) {
+					setReadOnly(dirList[k], false);
+					if (rmdir(dirList[k])) {
+						return true;
+					};
+				};
+				return false;
+			};
+		};
+		for (k = 0; k < fileList.length(); ++k) {
+			if (!remove(fileList[k])) {
+				if (isReadOnly(fileList[k])) {
+					setReadOnly(fileList[k], false);
+					if (remove(fileList[k])) {
+						continue;
+					};
+				};
+				return false;
+			};
+		};
+		return true;
+	};
+
+	bool removeDirRecursivelyForce(const String &dirName) {
+		if (!removeDirContentRecursivelyForce(dirName)) {
+			return false;
+		};
+		return rmdir(dirName);
+	};
 };

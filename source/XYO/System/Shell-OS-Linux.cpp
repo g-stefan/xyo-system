@@ -113,6 +113,17 @@ namespace XYO::System::Shell {
 		return (::remove(file) == 0);
 	};
 
+	bool isReadOnly(const char *fileOrFolder) {
+		if (access(fileOrFolder, W_OK) == 0) {
+			return false;
+		};
+		return true;
+	};
+
+	bool setReadOnly(const char *fileOrFolder, bool isReadOnly) {
+		return (chmod(fileOrFolder, S_IWUSR) == 0);
+	};
+
 	int compareLastWriteTime(const char *fileA, const char *fileB) {
 		struct stat attribA;
 		struct stat attribB;

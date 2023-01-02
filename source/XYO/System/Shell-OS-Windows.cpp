@@ -43,6 +43,30 @@ namespace XYO::System::Shell {
 		return (::remove(file) == 0);
 	};
 
+	bool isReadOnly(const char *fileOrFolder) {
+		DWORD fileAttributes;
+
+		fileAttributes = GetFileAttributesA(fileOrFolder);
+		if (fileAttributes == INVALID_FILE_ATTRIBUTES) {
+			return false;
+		};
+		return (fileAttributes & FILE_ATTRIBUTE_READONLY);
+	};
+
+	bool setReadOnly(const char *fileOrFolder, bool isReadOnly) {
+		DWORD fileAttributes;
+		fileAttributes = GetFileAttributesA(fileOrFolder);
+		if (fileAttributes == INVALID_FILE_ATTRIBUTES) {
+			return false;
+		};
+		if (isReadOnly) {
+			SetFileAttributes(fileOrFolder, fileAttributes | FILE_ATTRIBUTE_READONLY);
+			return true;
+		};
+		SetFileAttributes(fileOrFolder, fileAttributes & (~FILE_ATTRIBUTE_READONLY));
+		return true;
+	};
+
 	int compareLastWriteTime(const char *fileA, const char *fileB) {
 		HANDLE hFileA, hFileB;
 		FILETIME lastWriteTimeA, lastWriteTimeB;

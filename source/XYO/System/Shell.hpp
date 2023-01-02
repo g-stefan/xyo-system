@@ -38,6 +38,8 @@ namespace XYO::System::Shell {
 	XYO_SYSTEM_EXPORT char *getenv(const char *name);
 	XYO_SYSTEM_EXPORT bool setenv(const char *name, const char *value);
 	XYO_SYSTEM_EXPORT bool realpath(const char *fileNameIn, char *fileNameOut, long int fileNameOutSize);
+	XYO_SYSTEM_EXPORT bool isReadOnly(const char *fileOrFolder);
+	XYO_SYSTEM_EXPORT bool setReadOnly(const char *fileOrFolder, bool isReadOnly);
 
 	XYO_SYSTEM_EXPORT uint32_t execute(const char *cmd);
 	XYO_SYSTEM_EXPORT uint32_t executeHidden(const char *cmd);
@@ -104,6 +106,9 @@ namespace XYO::System::Shell {
 	XYO_SYSTEM_EXPORT void mainArgsSet(const char *cmdLine, int &cmdN, char **&cmdS);
 	//
 	XYO_SYSTEM_EXPORT bool getFileSize(const char *fileName, int64_t &size);
+	//
+	XYO_SYSTEM_EXPORT bool removeDirContentRecursivelyForce(const String &dirName);
+	XYO_SYSTEM_EXPORT bool removeDirRecursivelyForce(const String &dirName);
 };
 
 #endif
