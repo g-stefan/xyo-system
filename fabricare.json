@@ -1,18 +1,22 @@
 {
-	"project": {
-		"name":"xyo-system",
-		"type":"xyo-cpp",
-		"make" : "lib-and-dll",
-		"SPDX-License-Identifier": "MIT",
-		"sourcePath" : "XYO/System",
-		"testSource" : [
-			"test.01"
+	"solution": {
+		"name" : "xyo-system",
+		"type" : "xyo-cpp",
+		"projects": [
+			{
+				"name" : "xyo-system",
+				"make" : "lib-and-dll",
+				"SPDX-License-Identifier": "MIT",
+				"sourcePath" : "XYO/System",
+				"testSource" : [
+					"test.01"
+				],
+				"dependency" : [
+					"xyo-encoding",
+					"xyo-multithreading"
+				]
+			}
 		],
-		"dependency" : [
-			"xyo-encoding",
-			"xyo-multithreading"
-		],
-		"hasRelease" : true,
-		"githubRelease" : true
+		"hasGithub" : true
 	}
 }

@@ -3,7 +3,7 @@
 // SPDX-FileCopyrightText: 2022 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: Unlicense
 
-messageAction("make");
+messageAction("make.config");
 
 Shell.mkdirRecursivelyIfNotExists("output");
 Shell.mkdirRecursivelyIfNotExists("temp");
@@ -20,10 +20,3 @@ compileAndRunTemp({
 	cppSource : [ "source/"+Project.sourcePath+".Config.cpp" ],
 	crt : "static"
 });
-
-// ---
-
-if(!Fabricare.include("make."+Project.make)){
-	messageError("Don't know how to make '"+Project.make+"'!");
-	exit(1);
-};
