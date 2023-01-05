@@ -1238,7 +1238,7 @@ namespace XYO::System::Shell {
 				if (isReadOnly(dirList[k])) {
 					setReadOnly(dirList[k], false);
 					if (rmdir(dirList[k])) {
-						return true;
+						continue;
 					};
 				};
 				return false;
