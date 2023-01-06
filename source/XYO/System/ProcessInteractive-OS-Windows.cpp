@@ -264,7 +264,7 @@ namespace XYO::System {
 
 	bool ProcessInteractive::isRunning() {
 		if (this_->isOk) {
-			return (WAIT_TIMEOUT == WaitForSingleObject(this_->pInfo.hProcess, 1));
+			return (WAIT_TIMEOUT == WaitForSingleObject(this_->pInfo.hThread, 1));
 		};
 		return false;
 	};
