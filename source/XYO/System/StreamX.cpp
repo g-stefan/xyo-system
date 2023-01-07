@@ -16,14 +16,14 @@ namespace XYO::System::StreamX {
 		size_t readLn;
 		size_t readX;
 		size_t readTotal;
-		char buffer[16384];
+		char buffer[32768];
 
 		if (size == 0) {
 			return true;
 		};
 
 		readTotal = 0;
-		readX = 16384;
+		readX = 32768;
 		if (size < readX) {
 			readX = size;
 		};
@@ -47,8 +47,8 @@ namespace XYO::System::StreamX {
 				break;
 			};
 			readX = size - readTotal;
-			if (readX > 16384) {
-				readX = 16384;
+			if (readX > 32768) {
+				readX = 32768;
 			};
 		};
 

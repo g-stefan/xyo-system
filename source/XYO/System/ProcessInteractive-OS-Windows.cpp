@@ -86,7 +86,7 @@ namespace XYO::System {
 		secAttr.bInheritHandle = TRUE;
 		secAttr.lpSecurityDescriptor = nullptr;
 
-		if (!CreatePipe(&this_->hStdIn2, &this_->hStdIn1, &secAttr, 16384)) {
+		if (!CreatePipe(&this_->hStdIn2, &this_->hStdIn1, &secAttr, 32768)) {
 			this_->hStdIn1 = INVALID_HANDLE_VALUE;
 			this_->hStdIn2 = INVALID_HANDLE_VALUE;
 			close();
@@ -98,7 +98,7 @@ namespace XYO::System {
 			return false;
 		};
 
-		if (!CreatePipe(&this_->hStdOut1, &this_->hStdOut2, &secAttr, 16384)) {
+		if (!CreatePipe(&this_->hStdOut1, &this_->hStdOut2, &secAttr, 32768)) {
 			this_->hStdOut1 = INVALID_HANDLE_VALUE;
 			this_->hStdOut2 = INVALID_HANDLE_VALUE;
 			close();
@@ -137,10 +137,10 @@ namespace XYO::System {
 
 #	else
 
-		HRESULT hr = S_OK;
+		HRESULT hr;
 
 		hr = CreatePseudoConsole(
-		    {80, 64},
+		    {128, 128},
 		    this_->hStdIn2,
 		    this_->hStdOut2,
 		    0,
@@ -207,7 +207,7 @@ namespace XYO::System {
 	void ProcessInteractive::join() {
 		if (this_->isOk) {
 
-			BYTE buffer[16384];
+			BYTE buffer[32768];
 			DWORD bufferLn;
 			DWORD totalBufferLn;
 
@@ -217,13 +217,13 @@ namespace XYO::System {
 
 				if (PeekNamedPipe(this_->hStdOut1, nullptr, 0, nullptr, &totalBufferLn, nullptr)) {
 					if (totalBufferLn > 0) {
-						while (totalBufferLn > 16384) {
-							bufferLn = 16384;
+						while (totalBufferLn > 32768) {
+							bufferLn = 32768;
 							if (!ReadFile(this_->hStdOut1, buffer, bufferLn, &bufferLn, nullptr)) {
 								totalBufferLn = 0;
 								break;
 							};
-							totalBufferLn -= 16384;
+							totalBufferLn -= 32768;
 						};
 						if (totalBufferLn > 0) {
 							bufferLn = totalBufferLn;
@@ -235,13 +235,13 @@ namespace XYO::System {
 					};
 					if (WAIT_TIMEOUT != WaitForSingleObject(this_->pInfo.hProcess, 1)) {
 						if (PeekNamedPipe(this_->hStdOut1, nullptr, 0, nullptr, &totalBufferLn, nullptr)) {
-							while (totalBufferLn > 16384) {
-								bufferLn = 16384;
+							while (totalBufferLn > 32768) {
+								bufferLn = 32768;
 								if (!ReadFile(this_->hStdOut1, buffer, bufferLn, &bufferLn, nullptr)) {
 									totalBufferLn = 0;
 									break;
 								};
-								totalBufferLn -= 16384;
+								totalBufferLn -= 32768;
 							};
 							if (totalBufferLn > 0) {
 								bufferLn = totalBufferLn;

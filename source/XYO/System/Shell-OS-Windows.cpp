@@ -236,7 +236,7 @@ namespace XYO::System::Shell {
 
 		HANDLE h_out = nullptr;
 
-		BYTE buffer[16384];
+		BYTE buffer[32768];
 		DWORD buffer_ln;
 		DWORD total_buffer_ln;
 
@@ -259,8 +259,8 @@ namespace XYO::System::Shell {
 		SecAttr.bInheritHandle = TRUE;
 		SecAttr.lpSecurityDescriptor = nullptr;
 
-		CreatePipe(&hReadProc, &hWrite2Std, &SecAttr, 16384);
-		CreatePipe(&hRead2Std, &hWriteProc, &SecAttr, 16384);
+		CreatePipe(&hReadProc, &hWrite2Std, &SecAttr, 32768);
+		CreatePipe(&hRead2Std, &hWriteProc, &SecAttr, 32768);
 
 		SInfo.hStdInput = hRead2Std;
 		SInfo.hStdOutput = hWrite2Std;
@@ -283,12 +283,12 @@ namespace XYO::System::Shell {
 			for (;;) {
 				if (PeekNamedPipe(hReadProc, nullptr, 0, nullptr, &total_buffer_ln, nullptr)) {
 					if (total_buffer_ln > 0) {
-						while (total_buffer_ln > 16384) {
-							buffer_ln = 16384;
+						while (total_buffer_ln > 32768) {
+							buffer_ln = 32768;
 							if (ReadFile(hReadProc, buffer, buffer_ln, &buffer_ln, nullptr)) {
 								WriteFile(h_out, buffer, buffer_ln, &buffer_ln, nullptr);
 							};
-							total_buffer_ln -= 16384;
+							total_buffer_ln -= 32768;
 						};
 						if (total_buffer_ln > 0) {
 							buffer_ln = total_buffer_ln;
@@ -302,12 +302,12 @@ namespace XYO::System::Shell {
 
 							if (PeekNamedPipe(hReadProc, nullptr, 0, nullptr, &total_buffer_ln, nullptr)) {
 
-								while (total_buffer_ln > 16384) {
-									buffer_ln = 16384;
+								while (total_buffer_ln > 32768) {
+									buffer_ln = 32768;
 									if (ReadFile(hReadProc, buffer, buffer_ln, &buffer_ln, nullptr)) {
 										WriteFile(h_out, buffer, buffer_ln, &buffer_ln, nullptr);
 									};
-									total_buffer_ln -= 16384;
+									total_buffer_ln -= 32768;
 								};
 								if (total_buffer_ln > 0) {
 									buffer_ln = total_buffer_ln;

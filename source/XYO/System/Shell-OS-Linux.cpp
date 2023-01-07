@@ -58,7 +58,7 @@ namespace XYO::System::Shell {
 		int writeFd;
 		struct stat statBuf;
 
-		unsigned char buf[16384];
+		unsigned char buf[32768];
 		size_t rd;
 		size_t wd;
 		FILE *fIn;
@@ -78,10 +78,10 @@ namespace XYO::System::Shell {
 					if (fOut != nullptr) {
 						while (true) {
 							wd = 0;
-							rd = fread(buf, 1, 16384, fIn);
+							rd = fread(buf, 1, 32768, fIn);
 							if (rd > 0) {
 								wd = fwrite(buf, 1, rd, fOut);
-								if (rd < 16384) {
+								if (rd < 32768) {
 									break;
 								};
 								if (wd != rd) {
