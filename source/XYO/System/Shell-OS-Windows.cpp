@@ -271,7 +271,7 @@ namespace XYO::System::Shell {
 		    (LPSTR)cmd,
 		    nullptr,
 		    nullptr,
-		    FALSE,
+		    TRUE,
 		    0,
 		    nullptr,
 		    nullptr,
