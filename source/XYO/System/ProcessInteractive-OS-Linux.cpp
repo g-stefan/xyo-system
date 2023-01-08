@@ -360,6 +360,10 @@ namespace XYO::System {
 		};
 	};
 
+	void ProcessInteractive::useConPTY(bool value){
+	    // Nothing to do
+	};
+
 };
 
 #endif

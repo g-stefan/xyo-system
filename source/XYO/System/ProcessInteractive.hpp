@@ -43,6 +43,8 @@ namespace XYO::System {
 			XYO_SYSTEM_EXPORT void linkOwner(ProcessInteractive &processInteractive_);
 			XYO_SYSTEM_EXPORT void unLinkOwner();
 			XYO_SYSTEM_EXPORT void transferOwner(ProcessInteractive &processInteractive_);
+
+			XYO_SYSTEM_EXPORT void useConPTY(bool value);
 	};
 
 };
