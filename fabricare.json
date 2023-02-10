@@ -8,12 +8,18 @@
 				"make" : "lib-and-dll",
 				"SPDX-License-Identifier": "MIT",
 				"sourcePath" : "XYO/System",
-				"testSource" : [
-					"test.01"
-				],
 				"dependency" : [
 					"xyo-encoding",
 					"xyo-multithreading"
+				]
+			},
+			{
+				"name" : "test.01",
+				"make" : "exe.static",
+				"category" : "test",
+				"SPDX-License-Identifier": "Unlicense",
+				"dependency" : [
+					"xyo-system"
 				]
 			}
 		],
