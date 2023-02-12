@@ -109,6 +109,11 @@ namespace XYO::System::Shell {
 	//
 	XYO_SYSTEM_EXPORT bool removeDirContentRecursivelyForce(const String &dirName);
 	XYO_SYSTEM_EXPORT bool removeDirRecursivelyForce(const String &dirName);
+	//
+	XYO_SYSTEM_EXPORT bool fileGetContentsUTF8(const char *fileName, String &output, int mode);
+	XYO_SYSTEM_EXPORT bool filePutContentsUTF8(const char *fileName, const String &value, int mode);
+	XYO_SYSTEM_EXPORT bool fileReplaceTextUTF8(const String &fileInName, const String &fileOutName, TDynamicArray<TDynamicArray<String>> &textInOut, size_t maxLineSize, int mode);
+	//
 };
 
 #endif

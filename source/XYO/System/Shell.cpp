@@ -1264,4 +1264,105 @@ namespace XYO::System::Shell {
 		};
 		return rmdir(dirName);
 	};
+
+	bool fileGetContentsUTF8(const char *fileName, String &output, int mode) {
+		File file;
+		UTF8Read utf8Read;
+
+		if (file.openRead(fileName)) {
+			if (utf8Read.open(&file, mode)) {
+				size_t size;
+				size_t strSize;
+
+				file.seekFromEnd(0);
+				size = file.seekTell();
+				file.seekFromBegin(0);
+				strSize = size;
+				if (!((mode == UTFStreamMode::None) || (mode == UTFStreamMode::UTF8))) {
+					strSize = size * 2;
+				};
+				TPointer<StringReference> result(TMemory<StringReference>::newMemory());
+				result->init(strSize + 1);
+				size_t readLn = utf8Read.read(result->value(), strSize);
+				(result->value())[readLn] = 0;
+				result->setLength(readLn);
+
+				size_t verifyLn = 0;
+				switch (mode) {
+				case UTFStreamMode::None:
+				case UTFStreamMode::UTF8:
+					verifyLn = readLn;
+					break;
+				case UTFStreamMode::UTF16:
+					verifyLn = UTF::utf16FromUTF8Length(result->value()) * sizeof(utf16);
+					break;
+				case UTFStreamMode::UTF32:
+					verifyLn = UTF::utf32FromUTF8Length(result->value()) * sizeof(utf32);
+					break;
+				default:
+					break;
+				};
+				if (size == verifyLn) {
+					utf8Read.close();
+					file.close();
+					output = result;
+					return true;
+				};
+				result.deleteMemory();
+			};
+			file.close();
+		};
+		return false;
+	};
+
+	bool filePutContentsUTF8(const char *fileName, const String &value, int mode) {
+		File file;
+		UTF8Write utf8Write;
+
+		if (file.openWrite(fileName)) {
+			if (utf8Write.open(&file, mode)) {
+				if (utf8Write.write(value.index(0), value.length()) == value.length()) {
+					utf8Write.close();
+					file.close();
+					return true;
+				};
+				utf8Write.close();
+				file.close();
+			};
+		};
+		return false;
+	};
+
+	bool fileReplaceTextUTF8(const String &fileInName, const String &fileOutName, TDynamicArray<TDynamicArray<String>> &textInOut, size_t maxLineSize, int mode) {
+		File fileIn;
+		File fileOut;
+		UTF8Read utf8Read;
+		UTF8Write utf8Write;
+		String line;
+		String lineFinal;
+		size_t k;
+		if (!mkdirFilePath(fileOutName)) {
+			return false;
+		};
+		if (fileIn.openRead(fileInName)) {
+			if (utf8Read.open(&fileIn, mode)) {
+				if (fileOut.openWrite(fileOutName)) {
+					if (utf8Write.open(&fileOut, mode)) {
+						while (StreamX::readLn(utf8Read, line, maxLineSize)) {
+							lineFinal = line;
+							for (k = 0; k < textInOut.length(); ++k) {
+								lineFinal = String::replace(lineFinal, textInOut[k][0], textInOut[k][1]);
+							};
+							if (StreamX::write(utf8Write, lineFinal) != lineFinal.length()) {
+								return false;
+							};
+						};
+						return true;
+					};
+				};
+			};
+		};
+		return false;
+	};
+
 };
