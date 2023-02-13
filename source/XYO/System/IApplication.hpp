@@ -32,6 +32,7 @@ namespace XYO::System {
 	int main(int cmdN, char *cmdS[])\
 	{\
 		int retV;\
+		XYO::ManagedMemory::Registry::registryInit();\
 		XYO::ManagedMemory::TIfHasInitMemory<T>::initMemory();\
 		retV = XYOApplicationMain_(cmdN, cmdS);\
 		return retV;\
@@ -40,6 +41,7 @@ namespace XYO::System {
 #define XYO_APPLICATION_MAIN_C(applicationMain) \
 	int main(int cmdN, char *cmdS[])\
 	{\
+		XYO::ManagedMemory::Registry::registryInit();\
 		return applicationMain(cmdN, cmdS);\
 	}
 	// clang-format on
@@ -63,6 +65,7 @@ namespace XYO::System {
 		int cmdN;\
 		char** cmdS;\
 		int retV;\
+		XYO::ManagedMemory::Registry::registryInit();\
 		XYO::ManagedMemory::TIfHasInitMemory<T>::initMemory();\
 		GetModuleFileName(nullptr, exeName, MAX_PATH);\
 		XYO::System::Shell::mainArgsSet(exeName, GetCommandLineA(), cmdN, cmdS);\
@@ -78,6 +81,7 @@ namespace XYO::System {
 		int cmdN;\
 		char** cmdS;\
 		int retV;\
+		XYO::ManagedMemory::Registry::registryInit();\
 		GetModuleFileName(nullptr, exeName, MAX_PATH);\
 		XYO::System::Shell::mainArgsSet(exeName, GetCommandLineA(), cmdN, cmdS);\
 		retV = applicationMain(cmdN, cmdS);\

@@ -13,3 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Shell::filePutContentsUTF8
 - Shell::fileReplaceTextUTF8
 
+### Fixed
+
+- IApplication Managed Memory Registry initialization
+
