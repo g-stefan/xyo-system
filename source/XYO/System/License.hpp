@@ -13,8 +13,8 @@
 
 namespace XYO::System::License {
 
-	XYO_SYSTEM_EXPORT const char *license();
-	XYO_SYSTEM_EXPORT const char *shortLicense();
+	XYO_SYSTEM_EXPORT std::string license();
+	XYO_SYSTEM_EXPORT std::string shortLicense();
 
 };
 
