@@ -499,7 +499,7 @@ namespace XYO::System::Shell {
 	const char *envPathSeparator = ";";
 
 	String normalize(const String &fileOrDirectoryName) {
-		return String::replace(fileOrDirectoryName, "/", pathSeparator);
+		return StringX::replace(fileOrDirectoryName, "/", pathSeparator);
 	};
 
 	bool getFileSize(const char *fileName, int64_t &size) {
