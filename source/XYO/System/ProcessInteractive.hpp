@@ -45,6 +45,8 @@ namespace XYO::System {
 			XYO_SYSTEM_EXPORT void transferOwner(ProcessInteractive &processInteractive_);
 
 			XYO_SYSTEM_EXPORT void useConPTY(bool value);
+
+			XYO_SYSTEM_EXPORT static bool run(const char *cmdLine, String &retV, bool useConPTY_=true);
 	};
 
 };
