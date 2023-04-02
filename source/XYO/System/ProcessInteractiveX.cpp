@@ -38,7 +38,7 @@ namespace XYO::System::ProcessInteractiveX {
 		return true;
 	};
 	
-	bool runLn(const char *cmdLine, ProcessLn processLn, bool useConPTY_){
+	bool runLn(const char *cmdLine, ProcessLn processLn, void *this_, bool useConPTY_){
 		ProcessInteractive pInteractive;
 		char buffer[32768];
 		int bufferLn = 0;
@@ -52,7 +52,7 @@ namespace XYO::System::ProcessInteractiveX {
 		do {
 			if (pInteractive.waitToRead(1) > 0) {
 				if(StreamX::readLn(pInteractive, line, 32768)) {
-					if(!(*processLn)(pInteractive,line)){
+					if(!(*processLn)(pInteractive,line,this_)){
 						break;
 					};
 				};

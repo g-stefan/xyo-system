@@ -30,5 +30,6 @@
 #include <XYO/System/IApplication.hpp>
 #include <XYO/System/ApplicationVersion.hpp>
 #include <XYO/System/ProcessInteractive.hpp>
+#include <XYO/System/ProcessInteractiveX.hpp>
 
 #endif
