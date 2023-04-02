@@ -4,11 +4,12 @@
 // SPDX-FileCopyrightText: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
-#include <XYO/System/ProcessInteractive.hpp>
+#include <XYO/System/ProcessInteractiveX.hpp>
+#include <XYO/System/StreamX.hpp>
 
-namespace XYO::System {
+namespace XYO::System::ProcessInteractiveX {
 
-	bool ProcessInteractive::run(const char *cmdLine, String &retV, bool useConPTY_) {
+	bool run(const char *cmdLine, String &retV, bool useConPTY_) {
 		ProcessInteractive pInteractive;
 		char buffer[32768];
 		int bufferLn = 0;
@@ -33,6 +34,31 @@ namespace XYO::System {
 		if (bufferLn > 0) {
 			retV.concatenate(buffer, bufferLn);
 		};
+		pInteractive.close();
+		return true;
+	};
+	
+	bool runLn(const char *cmdLine, ProcessLn processLn, bool useConPTY_){
+		ProcessInteractive pInteractive;
+		char buffer[32768];
+		int bufferLn = 0;
+		String line;
+
+		pInteractive.useConPTY(useConPTY_);
+		if (!pInteractive.execute(cmdLine)) {
+			return false;
+		};
+
+		do {
+			if (pInteractive.waitToRead(1) > 0) {
+				if(StreamX::readLn(pInteractive, line, 32768)) {
+					if(!(*processLn)(pInteractive,line)){
+						break;
+					};
+				};
+			};
+		} while (pInteractive.isRunning());
+
 		pInteractive.close();
 		return true;
 	};
