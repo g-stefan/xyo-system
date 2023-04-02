@@ -12,10 +12,10 @@
 #endif
 
 namespace XYO::System::ProcessInteractiveX {
-	
+
 	typedef bool (*ProcessLn)(ProcessInteractive &pInteractive, String &line, void *this_);
 
-	XYO_SYSTEM_EXPORT bool run(const char *cmdLine, String &retV, bool useConPTY_ = true);			
+	XYO_SYSTEM_EXPORT bool run(const char *cmdLine, String &retV, bool useConPTY_ = true);
 	XYO_SYSTEM_EXPORT bool runLn(const char *cmdLine, ProcessLn processLn, void *this_, bool useConPTY_ = true);
 
 };
