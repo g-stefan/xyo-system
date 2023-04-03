@@ -23,7 +23,7 @@ namespace XYO::System::ProcessInteractiveX {
 
 		do {
 			if (pInteractive.waitToRead(1) > 0) {
-				bufferLn = pInteractive.read(buffer, 32760);
+				bufferLn = pInteractive.read(buffer, 32768);
 				if (bufferLn > 0) {
 					retV.concatenate(buffer, bufferLn);
 				};
@@ -51,7 +51,7 @@ namespace XYO::System::ProcessInteractiveX {
 
 		do {
 			if (pInteractive.waitToRead(1) > 0) {
-				if (StreamX::readLn(pInteractive, line, 32760)) {
+				if (StreamX::readLn(pInteractive, line, 32768)) {
 					if (!(*processLn)(pInteractive, line, this_)) {
 						break;
 					};
