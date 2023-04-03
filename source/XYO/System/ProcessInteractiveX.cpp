@@ -30,7 +30,7 @@ namespace XYO::System::ProcessInteractiveX {
 			};
 		} while (pInteractive.isRunning());
 
-		bufferLn = pInteractive.read(buffer, 32760);
+		bufferLn = pInteractive.read(buffer, 32768);
 		if (bufferLn > 0) {
 			retV.concatenate(buffer, bufferLn);
 		};
