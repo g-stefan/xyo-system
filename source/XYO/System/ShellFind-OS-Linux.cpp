@@ -65,7 +65,7 @@ namespace XYO::System {
 			return false;
 		} else {
 
-			while (!StringX::matchAscii(shellFind_->finddata->d_name, shellFind_->match_.value())) {
+			while (!String(shellFind_->finddata->d_name).matchAscii(shellFind_->match_.value())) {
 				shellFind_->finddata = readdir(shellFind_->hfind);
 				if (shellFind_->finddata != nullptr) {
 				} else {
@@ -104,8 +104,8 @@ namespace XYO::System {
 		size_t pos;
 
 		if (StringCore::indexOfFromEnd(name__, "/", pos)) {
-			path_ = StringX::substring(name__, 0, pos);
-			name_ = StringX::substring(name__, pos + 1);
+			path_ = name__.substring( 0, pos);
+			name_ = name__.substring( pos + 1);
 		} else {
 			path_ = ".";
 			name_ = name__;
@@ -118,7 +118,7 @@ namespace XYO::System {
 			if (shellFind_->finddata == nullptr) {
 				return false;
 			} else {
-				while (!StringX::matchAscii(shellFind_->finddata->d_name, shellFind_->match_)) {
+				while (!String(shellFind_->finddata->d_name).matchAscii( shellFind_->match_)) {
 					shellFind_->finddata = readdir(shellFind_->hfind);
 					if (shellFind_->finddata == nullptr) {
 						return false;
