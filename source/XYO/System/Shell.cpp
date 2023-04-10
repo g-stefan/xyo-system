@@ -28,24 +28,24 @@ namespace XYO::System::Shell {
 	String getFileName(const String &fileName) {
 		String fileName_ = normalize(fileName);
 		size_t index;
-		if (fileName_.indexOfFromEnd( pathSeparator, 0, index)) {
-			return fileName.substring( index + 1);
+		if (fileName_.indexOfFromEnd(pathSeparator, 0, index)) {
+			return fileName.substring(index + 1);
 		};
 		return fileName;
 	};
 
 	String getFileExtension(const String &fileName) {
 		size_t index;
-		if (fileName.indexOfFromEnd( ".", 0, index)) {
-			return fileName.substring( index + 1);
+		if (fileName.indexOfFromEnd(".", 0, index)) {
+			return fileName.substring(index + 1);
 		};
 		return "";
 	};
 
 	String getFileBasename(const String &fileName) {
 		size_t index;
-		if (fileName.indexOfFromEnd( ".", 0, index)) {
-			return fileName.substring( 0, index);
+		if (fileName.indexOfFromEnd(".", 0, index)) {
+			return fileName.substring(0, index);
 		};
 		return fileName;
 	};
@@ -53,8 +53,8 @@ namespace XYO::System::Shell {
 	String getFilePath(const String &fileName) {
 		String fileName_ = normalize(fileName);
 		size_t index;
-		if (fileName_.indexOfFromEnd( pathSeparator, 0, index)) {
-			return fileName.substring( 0, index);
+		if (fileName_.indexOfFromEnd(pathSeparator, 0, index)) {
+			return fileName.substring(0, index);
 		};
 		return "";
 	};
@@ -62,8 +62,8 @@ namespace XYO::System::Shell {
 	String getFilePathX(const String &fileName) {
 		String fileName_ = normalize(fileName);
 		size_t index;
-		if (fileName_.indexOfFromEnd( pathSeparator, 0, index)) {
-			return fileName.substring( 0, index + 1);
+		if (fileName_.indexOfFromEnd(pathSeparator, 0, index)) {
+			return fileName.substring(0, index + 1);
 		};
 		return "";
 	};
@@ -323,8 +323,8 @@ namespace XYO::System::Shell {
 		};
 #endif
 		pathMain = normalize(strExe);
-		if (pathMain.indexOfFromEnd( pathSeparator, 0, idx)) {
-			pathMain = pathMain.substring( 0, idx);
+		if (pathMain.indexOfFromEnd(pathSeparator, 0, idx)) {
+			pathMain = pathMain.substring(0, idx);
 		} else {
 			pathMain = ".";
 		};
@@ -398,7 +398,7 @@ namespace XYO::System::Shell {
 		fileList.empty();
 
 		String fileName_ = getFileName(fileName);
-		if (fileName_.indexOf( "*", 0, index) || fileName_.indexOf( "?", 0, index)) {
+		if (fileName_.indexOf("*", 0, index) || fileName_.indexOf("?", 0, index)) {
 			size_t m;
 			ShellFind scan;
 
@@ -427,7 +427,7 @@ namespace XYO::System::Shell {
 		dirList.empty();
 
 		String fileName_ = getFileName(fileName);
-		if (fileName_.indexOf( "*", 0, index) || fileName_.indexOf( "?", 0, index)) {
+		if (fileName_.indexOf("*", 0, index) || fileName_.indexOf("?", 0, index)) {
 			size_t m;
 			ShellFind scan;
 
@@ -468,8 +468,8 @@ namespace XYO::System::Shell {
 		size_t k = 0;
 		size_t index = 0;
 		while (index < dirName_.length()) {
-			if (dirName_.indexOf( pathSeparator, index + 1, index)) {
-				dirList[k] = dirName_.substring( 0, index);
+			if (dirName_.indexOf(pathSeparator, index + 1, index)) {
+				dirList[k] = dirName_.substring(0, index);
 				++k;
 				continue;
 			};
@@ -774,7 +774,7 @@ namespace XYO::System::Shell {
 		m = 0;
 		String findDir = source;
 		String sourcePath = source;
-		if (source.indexOf( "*", 0, k) || source.indexOf( "?", 0, k)) {
+		if (source.indexOf("*", 0, k) || source.indexOf("?", 0, k)) {
 			sourcePath = getFilePath(source);
 		} else {
 			findDir += pathSeparator;
@@ -849,7 +849,7 @@ namespace XYO::System::Shell {
 				while (StreamX::readLn(fileIn, line, maxLineSize)) {
 					lineFinal = line;
 					for (k = 0; k < textInOut.length(); ++k) {
-						lineFinal = lineFinal.replace( textInOut[k][0], textInOut[k][1]);
+						lineFinal = lineFinal.replace(textInOut[k][0], textInOut[k][1]);
 					};
 					if (StreamX::write(fileOut, lineFinal) != lineFinal.length()) {
 						return false;
@@ -890,7 +890,7 @@ namespace XYO::System::Shell {
 			return true;
 		};
 
-		if (!(pathToSearch.indexOf( "*", 0, index) || pathToSearch.indexOf( "?", 0, index))) {
+		if (!(pathToSearch.indexOf("*", 0, index) || pathToSearch.indexOf("?", 0, index))) {
 			pathToSearch += "/*";
 		};
 
@@ -1351,7 +1351,7 @@ namespace XYO::System::Shell {
 						while (StreamX::readLn(utf8Read, line, maxLineSize)) {
 							lineFinal = line;
 							for (k = 0; k < textInOut.length(); ++k) {
-								lineFinal = lineFinal.replace( textInOut[k][0], textInOut[k][1]);
+								lineFinal = lineFinal.replace(textInOut[k][0], textInOut[k][1]);
 							};
 							if (StreamX::write(utf8Write, lineFinal) != lineFinal.length()) {
 								return false;
