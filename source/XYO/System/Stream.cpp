@@ -4,9 +4,9 @@
 // SPDX-FileCopyrightText: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
-#include <XYO/System/StreamX.hpp>
+#include <XYO/System/Stream.hpp>
 
-namespace XYO::System::StreamX {
+namespace XYO::System::Stream {
 
 	bool read(IRead &iread, String &out, size_t size) {
 		StringReference *retV = TMemory<StringReference>::newMemory();

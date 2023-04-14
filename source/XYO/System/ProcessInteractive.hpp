@@ -13,7 +13,7 @@
 
 namespace XYO::System {
 
-	class ProcessInteractive_;
+	class ProcessInteractive_;	
 
 	class ProcessInteractive : public virtual IRead,
 	                           public virtual IWrite {
@@ -45,6 +45,11 @@ namespace XYO::System {
 			XYO_SYSTEM_EXPORT void transferOwner(ProcessInteractive &processInteractive_);
 
 			XYO_SYSTEM_EXPORT void useConPTY(bool value);
+			
+			// ---
+			typedef bool (*ProcessLn)(ProcessInteractive &pInteractive, String &line, void *this_);
+			XYO_SYSTEM_EXPORT static bool run(const char *cmdLine, String &retV, bool useConPTY_ = true);
+			XYO_SYSTEM_EXPORT static bool runLn(const char *cmdLine, ProcessLn processLn, void *this_, bool useConPTY_ = true);
 	};
 
 };

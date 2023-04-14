@@ -16,7 +16,7 @@
 // -
 
 #include <XYO/System/Buffer.hpp>
-#include <XYO/System/StreamX.hpp>
+#include <XYO/System/Stream.hpp>
 #include <XYO/System/Console.hpp>
 #include <XYO/System/DateTime.hpp>
 #include <XYO/System/Error.hpp>
@@ -30,6 +30,5 @@
 #include <XYO/System/IApplication.hpp>
 #include <XYO/System/ApplicationVersion.hpp>
 #include <XYO/System/ProcessInteractive.hpp>
-#include <XYO/System/ProcessInteractiveX.hpp>
 
 #endif

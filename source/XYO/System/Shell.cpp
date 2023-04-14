@@ -7,7 +7,7 @@
 #include <XYO/System/Shell.hpp>
 #include <XYO/System/FileTime.hpp>
 #include <XYO/System/File.hpp>
-#include <XYO/System/StreamX.hpp>
+#include <XYO/System/Stream.hpp>
 
 #ifdef XYO_OS_WINDOWS
 #	define WIN32_LEAN_AND_MEAN
@@ -227,7 +227,7 @@ namespace XYO::System::Shell {
 		String line;
 		if (file.openRead(fileName)) {
 			output = "";
-			while (StreamX::readLn(file, line, lineSize)) {
+			while (Stream::readLn(file, line, lineSize)) {
 				if (linesToSkip <= 0) {
 					output << line;
 					continue;
@@ -846,12 +846,12 @@ namespace XYO::System::Shell {
 		};
 		if (fileIn.openRead(fileInName)) {
 			if (fileOut.openWrite(fileOutName)) {
-				while (StreamX::readLn(fileIn, line, maxLineSize)) {
+				while (Stream::readLn(fileIn, line, maxLineSize)) {
 					lineFinal = line;
 					for (k = 0; k < textInOut.length(); ++k) {
 						lineFinal = lineFinal.replace(textInOut[k][0], textInOut[k][1]);
 					};
-					if (StreamX::write(fileOut, lineFinal) != lineFinal.length()) {
+					if (Stream::write(fileOut, lineFinal) != lineFinal.length()) {
 						return false;
 					};
 				};
@@ -1348,12 +1348,12 @@ namespace XYO::System::Shell {
 			if (utf8Read.open(&fileIn, mode)) {
 				if (fileOut.openWrite(fileOutName)) {
 					if (utf8Write.open(&fileOut, mode)) {
-						while (StreamX::readLn(utf8Read, line, maxLineSize)) {
+						while (Stream::readLn(utf8Read, line, maxLineSize)) {
 							lineFinal = line;
 							for (k = 0; k < textInOut.length(); ++k) {
 								lineFinal = lineFinal.replace(textInOut[k][0], textInOut[k][1]);
 							};
-							if (StreamX::write(utf8Write, lineFinal) != lineFinal.length()) {
+							if (Stream::write(utf8Write, lineFinal) != lineFinal.length()) {
 								return false;
 							};
 						};

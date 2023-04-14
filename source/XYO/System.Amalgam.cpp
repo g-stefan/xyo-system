@@ -13,9 +13,9 @@
 
 #include <XYO/System/ProcessInteractive-OS-Linux.cpp>
 #include <XYO/System/ProcessInteractive-OS-Windows.cpp>
-#include <XYO/System/ProcessInteractiveX.cpp>
+#include <XYO/System/ProcessInteractive.cpp>
 #include <XYO/System/Buffer.cpp>
-#include <XYO/System/StreamX.cpp>
+#include <XYO/System/Stream.cpp>
 #include <XYO/System/Console-OS-Linux.cpp>
 #include <XYO/System/Console-OS-Windows.cpp>
 #include <XYO/System/DateTime-OS-Linux.cpp>
