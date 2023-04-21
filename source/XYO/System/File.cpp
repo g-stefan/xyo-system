@@ -17,8 +17,7 @@ namespace XYO::System {
 	File::File() {
 		value_ = new File_;
 		value_->hFile = nullptr;
-		value_->reclaim = false;
-		linkOwner_ = nullptr;
+		value_->reclaim = false;		
 	};
 
 	File::~File() {
@@ -122,51 +121,11 @@ namespace XYO::System {
 			};
 		};
 		value_->reclaim = false;
-		value_->hFile = nullptr;
-		unLinkOwner();
+		value_->hFile = nullptr;		
 	};
 
 	void File::flush() {
 		fflush(value_->hFile);
 	};
 
-	void File::becomeOwner(File &file_) {
-		close();
-		file_.unLinkOwner();
-		value_->reclaim = file_.value_->reclaim;
-		value_->hFile = file_.value_->hFile;
-		file_.value_->reclaim = false;
-		file_.value_->hFile = nullptr;
-	};
-
-	void File::linkOwner(File &file_) {
-		close();
-		file_.unLinkOwner();
-		value_->reclaim = file_.value_->reclaim;
-		value_->hFile = file_.value_->hFile;
-		linkOwner_ = &file_;
-		file_.linkOwner_ = this;
-	};
-
-	void File::unLinkOwner() {
-		if (linkOwner_ != nullptr) {
-			linkOwner_->value_->reclaim = false;
-			linkOwner_->value_->hFile = nullptr;
-			linkOwner_->linkOwner_ = nullptr;
-			linkOwner_ = nullptr;
-		};
-	};
-
-	void File::transferOwner(File &file_) {
-		close();
-		value_->reclaim = file_.value_->reclaim;
-		value_->hFile = file_.value_->hFile;
-		linkOwner_ = file_.linkOwner_;
-		file_.value_->reclaim = false;
-		file_.value_->hFile = nullptr;
-		file_.linkOwner_ = nullptr;
-		if (linkOwner_) {
-			linkOwner_->linkOwner_ = this;
-		};
-	};
 };

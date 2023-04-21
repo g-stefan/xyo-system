@@ -21,8 +21,7 @@ namespace XYO::System {
 			XYO_DISALLOW_COPY_ASSIGN_MOVE(File);
 
 		protected:
-			File_ *value_;
-			File *linkOwner_;
+			File_ *value_;			
 
 		public:
 			XYO_SYSTEM_EXPORT File();
@@ -48,11 +47,6 @@ namespace XYO::System {
 			XYO_SYSTEM_EXPORT bool seek(uint64_t x);
 			XYO_SYSTEM_EXPORT bool seekFromEnd(uint64_t x);
 			XYO_SYSTEM_EXPORT uint64_t seekTell();
-
-			XYO_SYSTEM_EXPORT void becomeOwner(File &file_);
-			XYO_SYSTEM_EXPORT void linkOwner(File &file_);
-			XYO_SYSTEM_EXPORT void unLinkOwner();
-			XYO_SYSTEM_EXPORT void transferOwner(File &file_);
 	};
 
 };

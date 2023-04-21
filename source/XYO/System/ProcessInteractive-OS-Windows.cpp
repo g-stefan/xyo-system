@@ -58,8 +58,7 @@ namespace XYO::System {
 		this_->hStdOut2 = INVALID_HANDLE_VALUE;
 		memset(&this_->pInfo, 0, sizeof(PROCESS_INFORMATION));
 		this_->isOk = FALSE;
-		this_->returnValue = 0;
-		linkOwner_ = nullptr;
+		this_->returnValue = 0;		
 #	ifndef XYO_CONFIG_WINDOWS_DISABLE_CONPTY
 		this_->conPTY = true;
 		this_->hPC = INVALID_HANDLE_VALUE;
@@ -338,8 +337,7 @@ namespace XYO::System {
 		};
 		memset(&this_->pInfo, 0, sizeof(PROCESS_INFORMATION));
 
-		this_->isOk = false;
-		unLinkOwner();
+		this_->isOk = false;		
 	};
 
 	bool ProcessInteractive::terminate(const uint32_t waitMilliseconds_) {
@@ -398,119 +396,6 @@ namespace XYO::System {
 			return 0;
 		};
 		return -1;
-	};
-
-	void ProcessInteractive::becomeOwner(ProcessInteractive &processInteractive_) {
-		close();
-		processInteractive_.unLinkOwner();
-
-		this_->hStdIn1 = processInteractive_.this_->hStdIn1;
-		this_->hStdIn2 = processInteractive_.this_->hStdIn2;
-		this_->hStdOut1 = processInteractive_.this_->hStdOut1;
-		this_->hStdOut2 = processInteractive_.this_->hStdOut2;
-		memcpy(&this_->pInfo, &processInteractive_.this_->pInfo, sizeof(PROCESS_INFORMATION));
-		this_->isOk = processInteractive_.this_->isOk;
-		this_->returnValue = processInteractive_.this_->returnValue;
-#	ifndef XYO_CONFIG_WINDOWS_DISABLE_CONPTY
-		this_->conPTY = processInteractive_.this_->conPTY;
-		this_->hPC = processInteractive_.this_->hPC;
-		this_->threadAttributeList = processInteractive_.this_->threadAttributeList;
-#	endif
-
-		processInteractive_.this_->hStdIn1 = INVALID_HANDLE_VALUE;
-		processInteractive_.this_->hStdIn2 = INVALID_HANDLE_VALUE;
-		processInteractive_.this_->hStdOut1 = INVALID_HANDLE_VALUE;
-		processInteractive_.this_->hStdOut2 = INVALID_HANDLE_VALUE;
-		memset(&processInteractive_.this_->pInfo, 0, sizeof(PROCESS_INFORMATION));
-		processInteractive_.this_->isOk = 0;
-		processInteractive_.this_->returnValue = 0;
-
-#	ifndef XYO_CONFIG_WINDOWS_DISABLE_CONPTY
-		processInteractive_.this_->conPTY = true;
-		processInteractive_.this_->hPC = INVALID_HANDLE_VALUE;
-		processInteractive_.this_->threadAttributeList = nullptr;
-#	endif
-	};
-
-	void ProcessInteractive::linkOwner(ProcessInteractive &processInteractive_) {
-		close();
-		processInteractive_.unLinkOwner();
-
-		this_->hStdIn1 = processInteractive_.this_->hStdIn1;
-		this_->hStdIn2 = processInteractive_.this_->hStdIn2;
-		this_->hStdOut1 = processInteractive_.this_->hStdOut1;
-		this_->hStdOut2 = processInteractive_.this_->hStdOut2;
-		memcpy(&this_->pInfo, &processInteractive_.this_->pInfo, sizeof(PROCESS_INFORMATION));
-		this_->isOk = processInteractive_.this_->isOk;
-		this_->returnValue = processInteractive_.this_->returnValue;
-
-#	ifndef XYO_CONFIG_WINDOWS_DISABLE_CONPTY
-		this_->conPTY = processInteractive_.this_->conPTY;
-		this_->hPC = processInteractive_.this_->hPC;
-		this_->threadAttributeList = processInteractive_.this_->threadAttributeList;
-#	endif
-
-		linkOwner_ = &processInteractive_;
-		processInteractive_.linkOwner_ = this;
-	};
-
-	void ProcessInteractive::unLinkOwner() {
-		if (linkOwner_ != nullptr) {
-
-			linkOwner_->this_->hStdIn1 = INVALID_HANDLE_VALUE;
-			linkOwner_->this_->hStdIn2 = INVALID_HANDLE_VALUE;
-			linkOwner_->this_->hStdOut1 = INVALID_HANDLE_VALUE;
-			linkOwner_->this_->hStdOut2 = INVALID_HANDLE_VALUE;
-			memset(&linkOwner_->this_->pInfo, 0, sizeof(PROCESS_INFORMATION));
-			linkOwner_->this_->isOk = 0;
-			linkOwner_->this_->returnValue = 0;
-
-#	ifndef XYO_CONFIG_WINDOWS_DISABLE_CONPTY
-			linkOwner_->this_->conPTY = true;
-			linkOwner_->this_->hPC = INVALID_HANDLE_VALUE;
-			linkOwner_->this_->threadAttributeList = nullptr;
-#	endif
-
-			linkOwner_->linkOwner_ = nullptr;
-			linkOwner_ = nullptr;
-		};
-	};
-
-	void ProcessInteractive::transferOwner(ProcessInteractive &processInteractive_) {
-		close();
-
-		this_->hStdIn1 = processInteractive_.this_->hStdIn1;
-		this_->hStdIn2 = processInteractive_.this_->hStdIn2;
-		this_->hStdOut1 = processInteractive_.this_->hStdOut1;
-		this_->hStdOut2 = processInteractive_.this_->hStdOut2;
-		memcpy(&this_->pInfo, &processInteractive_.this_->pInfo, sizeof(PROCESS_INFORMATION));
-		this_->isOk = processInteractive_.this_->isOk;
-		this_->returnValue = processInteractive_.this_->returnValue;
-#	ifndef XYO_CONFIG_WINDOWS_DISABLE_CONPTY
-		this_->conPTY = processInteractive_.this_->conPTY;
-		this_->hPC = processInteractive_.this_->hPC;
-		this_->threadAttributeList = processInteractive_.this_->threadAttributeList;
-#	endif
-
-		linkOwner_ = processInteractive_.linkOwner_;
-
-		processInteractive_.this_->hStdIn1 = INVALID_HANDLE_VALUE;
-		processInteractive_.this_->hStdIn2 = INVALID_HANDLE_VALUE;
-		processInteractive_.this_->hStdOut1 = INVALID_HANDLE_VALUE;
-		processInteractive_.this_->hStdOut2 = INVALID_HANDLE_VALUE;
-		memset(&processInteractive_.this_->pInfo, 0, sizeof(PROCESS_INFORMATION));
-		processInteractive_.this_->isOk = 0;
-		processInteractive_.this_->returnValue = 0;
-#	ifndef XYO_CONFIG_WINDOWS_DISABLE_CONPTY
-		processInteractive_.this_->conPTY = true;
-		processInteractive_.this_->hPC = INVALID_HANDLE_VALUE;
-		processInteractive_.this_->threadAttributeList = nullptr;
-#	endif
-
-		processInteractive_.linkOwner_ = nullptr;
-		if (linkOwner_) {
-			linkOwner_->linkOwner_ = this;
-		};
 	};
 
 	void ProcessInteractive::useConPTY(bool value) {

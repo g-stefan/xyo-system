@@ -20,8 +20,7 @@ namespace XYO::System {
 			XYO_DISALLOW_COPY_ASSIGN_MOVE(ProcessInteractive);
 
 		protected:
-			ProcessInteractive_ *this_;
-			ProcessInteractive *linkOwner_;
+			ProcessInteractive_ *this_;			
 
 		public:
 			XYO_SYSTEM_EXPORT ProcessInteractive();
@@ -38,12 +37,7 @@ namespace XYO::System {
 			XYO_SYSTEM_EXPORT size_t read(void *output, size_t ln);
 			XYO_SYSTEM_EXPORT size_t write(const void *input, size_t ln);
 			XYO_SYSTEM_EXPORT int waitToRead(uint32_t microSeconds);
-
-			XYO_SYSTEM_EXPORT void becomeOwner(ProcessInteractive &processInteractive_);
-			XYO_SYSTEM_EXPORT void linkOwner(ProcessInteractive &processInteractive_);
-			XYO_SYSTEM_EXPORT void unLinkOwner();
-			XYO_SYSTEM_EXPORT void transferOwner(ProcessInteractive &processInteractive_);
-
+			
 			XYO_SYSTEM_EXPORT void useConPTY(bool value);
 			
 			// ---

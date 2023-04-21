@@ -54,8 +54,7 @@ namespace XYO::System {
 		this_->hStdOut[PIPE_READ] = 0;
 		this_->hStdOut[PIPE_WRITE] = 0;
 		this_->isOk = false;
-		this_->returnValue = 0;
-		linkOwner_ = nullptr;
+		this_->returnValue = 0;		
 	};
 
 	ProcessInteractive::~ProcessInteractive() {
@@ -213,8 +212,7 @@ namespace XYO::System {
 		};
 
 		this_->pId = 0;
-		this_->isOk = false;
-		unLinkOwner();
+		this_->isOk = false;	
 	};
 
 	bool ProcessInteractive::terminate(const uint32_t waitMilliseconds_) {
@@ -278,86 +276,6 @@ namespace XYO::System {
 			};
 		};
 		return -1;
-	};
-
-	void ProcessInteractive::becomeOwner(ProcessInteractive &processInteractive_) {
-		close();
-		processInteractive_.unLinkOwner();
-
-		this_->hStdIn[PIPE_READ] = processInteractive_.this_->hStdIn[PIPE_READ];
-		this_->hStdIn[PIPE_WRITE] = processInteractive_.this_->hStdIn[PIPE_WRITE];
-		this_->hStdOut[PIPE_READ] = processInteractive_.this_->hStdOut[PIPE_READ];
-		this_->hStdOut[PIPE_WRITE] = processInteractive_.this_->hStdOut[PIPE_WRITE];
-		this_->pId = processInteractive_.this_->pId;
-		this_->isOk = processInteractive_.this_->isOk;
-		this_->returnValue = processInteractive_.this_->returnValue;
-
-		processInteractive_.this_->hStdIn[PIPE_READ] = 0;
-		processInteractive_.this_->hStdIn[PIPE_WRITE] = 0;
-		processInteractive_.this_->hStdOut[PIPE_READ] = 0;
-		processInteractive_.this_->hStdOut[PIPE_WRITE] = 0;
-		processInteractive_.this_->pId = 0;
-		processInteractive_.this_->isOk = 0;
-		processInteractive_.this_->returnValue = 0;
-	};
-
-	void ProcessInteractive::linkOwner(ProcessInteractive &processInteractive_) {
-		close();
-		processInteractive_.unLinkOwner();
-
-		this_->hStdIn[PIPE_READ] = processInteractive_.this_->hStdIn[PIPE_READ];
-		this_->hStdIn[PIPE_WRITE] = processInteractive_.this_->hStdIn[PIPE_WRITE];
-		this_->hStdOut[PIPE_READ] = processInteractive_.this_->hStdOut[PIPE_READ];
-		this_->hStdOut[PIPE_WRITE] = processInteractive_.this_->hStdOut[PIPE_WRITE];
-		this_->pId = processInteractive_.this_->pId;
-		this_->isOk = processInteractive_.this_->isOk;
-		this_->returnValue = processInteractive_.this_->returnValue;
-
-		linkOwner_ = &processInteractive_;
-		processInteractive_.linkOwner_ = this;
-	};
-
-	void ProcessInteractive::unLinkOwner() {
-		if (linkOwner_ != nullptr) {
-
-			linkOwner_->this_->hStdIn[PIPE_READ] = 0;
-			linkOwner_->this_->hStdIn[PIPE_WRITE] = 0;
-			linkOwner_->this_->hStdOut[PIPE_READ] = 0;
-			linkOwner_->this_->hStdOut[PIPE_WRITE] = 0;
-			linkOwner_->this_->pId = 0;
-			linkOwner_->this_->isOk = 0;
-			linkOwner_->this_->returnValue = 0;
-
-			linkOwner_->linkOwner_ = nullptr;
-			linkOwner_ = nullptr;
-		};
-	};
-
-	void ProcessInteractive::transferOwner(ProcessInteractive &processInteractive_) {
-		close();
-
-		this_->hStdIn[PIPE_READ] = processInteractive_.this_->hStdIn[PIPE_READ];
-		this_->hStdIn[PIPE_WRITE] = processInteractive_.this_->hStdIn[PIPE_WRITE];
-		this_->hStdOut[PIPE_READ] = processInteractive_.this_->hStdOut[PIPE_READ];
-		this_->hStdOut[PIPE_WRITE] = processInteractive_.this_->hStdOut[PIPE_WRITE];
-		this_->pId = processInteractive_.this_->pId;
-		this_->isOk = processInteractive_.this_->isOk;
-		this_->returnValue = processInteractive_.this_->returnValue;
-
-		linkOwner_ = processInteractive_.linkOwner_;
-
-		processInteractive_.this_->hStdIn[PIPE_READ] = 0;
-		processInteractive_.this_->hStdIn[PIPE_WRITE] = 0;
-		processInteractive_.this_->hStdOut[PIPE_READ] = 0;
-		processInteractive_.this_->hStdOut[PIPE_WRITE] = 0;
-		processInteractive_.this_->pId = 0;
-		processInteractive_.this_->isOk = 0;
-		processInteractive_.this_->returnValue = 0;
-
-		processInteractive_.linkOwner_ = nullptr;
-		if (linkOwner_) {
-			linkOwner_->linkOwner_ = this;
-		};
 	};
 
 	void ProcessInteractive::useConPTY(bool value){
