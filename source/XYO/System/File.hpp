@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #ifndef XYO_SYSTEM_FILE_HPP
@@ -21,7 +21,7 @@ namespace XYO::System {
 			XYO_DISALLOW_COPY_ASSIGN_MOVE(File);
 
 		protected:
-			File_ *value_;			
+			File_ *value_;
 
 		public:
 			XYO_SYSTEM_EXPORT File();

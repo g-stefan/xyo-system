@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #include <XYO/System/ProcessInteractive.hpp>
@@ -38,10 +38,8 @@ namespace XYO::System {
 		return true;
 	};
 
-	bool ProcessInteractive::runLn(const char *cmdLine, ProcessLn processLn, void *this_, bool useConPTY_) {
+	bool ProcessInteractive::runLn(const char *cmdLine, ProcessLn processLn, void *this_, bool useConPTY_, size_t lineMaxLn) {
 		ProcessInteractive pInteractive;
-		char buffer[32768];
-		int bufferLn = 0;
 		String line;
 
 		pInteractive.useConPTY(useConPTY_);
@@ -51,7 +49,7 @@ namespace XYO::System {
 
 		do {
 			if (pInteractive.waitToRead(1) > 0) {
-				if (Stream::readLn(pInteractive, line, 32768)) {
+				if (Stream::readLn(pInteractive, line, lineMaxLn)) {
 					if (!(*processLn)(pInteractive, line, this_)) {
 						break;
 					};

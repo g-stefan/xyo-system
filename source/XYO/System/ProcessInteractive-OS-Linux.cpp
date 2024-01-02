@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #include <XYO/System/ProcessInteractive.hpp>
@@ -54,7 +54,7 @@ namespace XYO::System {
 		this_->hStdOut[PIPE_READ] = 0;
 		this_->hStdOut[PIPE_WRITE] = 0;
 		this_->isOk = false;
-		this_->returnValue = 0;		
+		this_->returnValue = 0;
 	};
 
 	ProcessInteractive::~ProcessInteractive() {
@@ -212,7 +212,7 @@ namespace XYO::System {
 		};
 
 		this_->pId = 0;
-		this_->isOk = false;	
+		this_->isOk = false;
 	};
 
 	bool ProcessInteractive::terminate(const uint32_t waitMilliseconds_) {

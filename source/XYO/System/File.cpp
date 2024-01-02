@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #include <XYO/System/File.hpp>
@@ -17,7 +17,7 @@ namespace XYO::System {
 	File::File() {
 		value_ = new File_;
 		value_->hFile = nullptr;
-		value_->reclaim = false;		
+		value_->reclaim = false;
 	};
 
 	File::~File() {
@@ -121,7 +121,7 @@ namespace XYO::System {
 			};
 		};
 		value_->reclaim = false;
-		value_->hFile = nullptr;		
+		value_->hFile = nullptr;
 	};
 
 	void File::flush() {

@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #ifndef XYO_SYSTEM_SHELL_HPP
@@ -107,6 +107,8 @@ namespace XYO::System::Shell {
 	//
 	XYO_SYSTEM_EXPORT bool getFileSize(const char *fileName, int64_t &size);
 	//
+	XYO_SYSTEM_EXPORT bool removeFileForce(const String &fileName);
+	XYO_SYSTEM_EXPORT bool rmdirForce(const String &dirName);
 	XYO_SYSTEM_EXPORT bool removeDirContentRecursivelyForce(const String &dirName);
 	XYO_SYSTEM_EXPORT bool removeDirRecursivelyForce(const String &dirName);
 	//

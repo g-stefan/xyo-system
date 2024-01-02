@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #include <XYO/System/Stream.hpp>
@@ -138,6 +138,9 @@ namespace XYO::System::Stream {
 		size_t readTotal;
 
 		readToLn = ln;
+		if (readToLn > buffer.size) {
+			readToLn = buffer.size;
+		};
 		readTotal = 0;
 		readX = readToLn;
 		for (;;) {

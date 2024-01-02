@@ -1,18 +1,18 @@
 // System
-// Copyright (c) 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #ifndef XYO_SYSTEM_VERSION_RH
 #define XYO_SYSTEM_VERSION_RH
 
 #ifndef XYO_SYSTEM_NO_VERSION
-#define XYO_SYSTEM_VERSION_ABCD 5,0,0,10
-#define XYO_SYSTEM_VERSION_STR "5.0.0"
-#define XYO_SYSTEM_VERSION_STR_BUILD "10"
-#define XYO_SYSTEM_VERSION_STR_DATETIME "2023-04-21 17:29:08"
-#define XYO_SYSTEM_VERSION_STR_WITH_BUILD "5.0.0.10"
+#define XYO_SYSTEM_VERSION_ABCD 5,1,1,11
+#define XYO_SYSTEM_VERSION_STR "5.1.1"
+#define XYO_SYSTEM_VERSION_STR_BUILD "11"
+#define XYO_SYSTEM_VERSION_STR_DATETIME "2024-01-02 02:21:48"
+#define XYO_SYSTEM_VERSION_STR_WITH_BUILD "5.1.1.11"
 #else
 #define XYO_SYSTEM_VERSION_ABCD 0,0,0,0
 #define XYO_SYSTEM_VERSION_STR "0.0.0"

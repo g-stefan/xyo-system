@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #ifndef XYO_SYSTEM_IAPPLICATION_HPP
@@ -44,7 +44,7 @@ namespace XYO::System {
 		XYO::ManagedMemory::Registry::registryInit();\
 		return applicationMain(cmdN, cmdS);\
 	}
-	// clang-format on
+// clang-format on
 
 #ifdef XYO_OS_WINDOWS
 
@@ -88,7 +88,7 @@ namespace XYO::System {
 		XYO::System::Shell::mainArgsDelete(cmdN, cmdS);\
 		return retV;\
 	}
-	// clang-format on
+// clang-format on
 
 #endif
 

@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2023 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #include <XYO/System/Shell.hpp>
@@ -1194,6 +1194,35 @@ namespace XYO::System::Shell {
 		for (k = 0; k < cmdN; ++k) {
 			mainArgsFilter(cmdS[k]);
 		};
+	};
+
+	bool removeFileForce(const String &fileName) {
+		if (fileExists(fileName)) {
+			if (!remove(fileName)) {
+				if (isReadOnly(fileName)) {
+					setReadOnly(fileName, false);
+					if (remove(fileName)) {
+						return true;
+					};
+				};
+				return false;
+			};
+			return true;
+		};
+		return false;
+	};
+
+	bool rmdirForce(const String &dirName) {
+		if (!rmdir(dirName)) {
+			if (isReadOnly(dirName)) {
+				setReadOnly(dirName, false);
+				if (rmdir(dirName)) {
+					return true;
+				};
+			};
+			return false;
+		};
+		return true;
 	};
 
 	bool removeDirContentRecursivelyForce(const String &dirName) {
