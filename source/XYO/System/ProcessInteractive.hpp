@@ -17,7 +17,7 @@ namespace XYO::System {
 
 	class ProcessInteractive : public virtual IRead,
 	                           public virtual IWrite {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(ProcessInteractive);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(ProcessInteractive);
 
 		protected:
 			ProcessInteractive_ *this_;

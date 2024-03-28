@@ -7,11 +7,11 @@
 #include <XYO/System/ProcessInteractive.hpp>
 #include <XYO/System/Shell.hpp>
 
-#ifdef XYO_OS_WINDOWS
+#ifdef XYO_PLATFORM_OS_WINDOWS
 
 // ---
 
-#	ifdef XYO_OS_MINGW
+#	ifdef XYO_PLATFORM_OS_MINGW
 #		ifndef XYO_CONFIG_WINDOWS_DISABLE_CONPTY
 #			define NTDDI_VERSION 0x0A000006 // NTDDI_WIN10_RS5
 #			undef _WIN32_WINNT

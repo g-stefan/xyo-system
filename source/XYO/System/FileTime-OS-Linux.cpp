@@ -6,7 +6,7 @@
 
 #include <XYO/System/FileTime.hpp>
 
-#ifdef XYO_OS_LINUX
+#ifdef XYO_PLATFORM_OS_LINUX
 
 #	include <sys/types.h>
 #	include <sys/stat.h>

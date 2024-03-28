@@ -14,7 +14,7 @@
 namespace XYO::System {
 
 	class IApplication : public virtual Object {
-			XYO_INTERFACE(IApplication);
+			XYO_PLATFORM_INTERFACE(IApplication);
 
 		public:
 			virtual int main(int cmdN, char *cmdS[]) = 0;
@@ -46,7 +46,7 @@ namespace XYO::System {
 	}
 // clang-format on
 
-#ifdef XYO_OS_WINDOWS
+#ifdef XYO_PLATFORM_OS_WINDOWS
 
 #	ifndef XYO_SYSTEM_SHELL_HPP
 #		include <XYO/System/Shell.hpp>

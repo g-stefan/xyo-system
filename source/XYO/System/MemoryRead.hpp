@@ -15,7 +15,7 @@ namespace XYO::System {
 
 	class MemoryRead : public virtual IRead,
 	                   public virtual ISeek {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(MemoryRead);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(MemoryRead);
 
 		protected:
 			const void *data_;

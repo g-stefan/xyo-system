@@ -14,7 +14,7 @@
 namespace XYO::System {
 
 	class StringWrite : public virtual IWrite {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(StringWrite);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(StringWrite);
 
 		protected:
 			String *data_;

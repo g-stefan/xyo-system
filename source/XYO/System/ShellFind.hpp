@@ -16,7 +16,7 @@ namespace XYO::System {
 	typedef struct SShellFind_ ShellFind_;
 
 	class ShellFind : public Object {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(ShellFind);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(ShellFind);
 
 		protected:
 			ShellFind_ *shellFind_;

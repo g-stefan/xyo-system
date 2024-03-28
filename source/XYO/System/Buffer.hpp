@@ -14,7 +14,7 @@
 namespace XYO::System {
 
 	class Buffer : public Object {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(Buffer);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(Buffer);
 
 		public:
 			uint8_t *buffer;

@@ -8,7 +8,7 @@
 using namespace XYO::System;
 
 class Application : public virtual IApplication {
-		XYO_DISALLOW_COPY_ASSIGN_MOVE(Application);
+		XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(Application);
 	public:
 		inline Application(){};
 

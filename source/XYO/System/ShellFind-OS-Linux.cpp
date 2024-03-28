@@ -6,7 +6,7 @@
 
 #include <XYO/System/ShellFind.hpp>
 
-#ifdef XYO_OS_LINUX
+#ifdef XYO_PLATFORM_OS_LINUX
 
 #	ifndef _POSIX_SOURCE
 #		define _POSIX_SOURCE

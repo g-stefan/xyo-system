@@ -6,7 +6,7 @@
 
 #include <XYO/System/DateTime.hpp>
 
-#ifdef XYO_OS_LINUX
+#ifdef XYO_PLATFORM_OS_LINUX
 
 #	include <sys/time.h>
 #	include <time.h>

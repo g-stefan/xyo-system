@@ -6,7 +6,7 @@
 
 #include <XYO/System/DateTime.hpp>
 
-#ifdef XYO_OS_WINDOWS
+#ifdef XYO_PLATFORM_OS_WINDOWS
 
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
@@ -168,10 +168,10 @@ namespace XYO::System {
 
 	static void unixTimeToFileTime_(time_t t, FILETIME &ft) {
 		LONGLONG ll;
-#	ifdef XYO_COMPILER_MSVC
+#	ifdef XYO_PLATFORM_COMPILER_MSVC
 		ll = Int32x32To64(t, 10000000UL) + 116444736000000000ui64;
 #	endif
-#	ifdef XYO_COMPILER_GCC
+#	ifdef XYO_PLATFORM_COMPILER_GCC
 		ll = Int32x32To64(t, 10000000UL) + 116444736000000000ULL;
 #	endif
 		ft.dwLowDateTime = (DWORD)ll;
@@ -181,10 +181,10 @@ namespace XYO::System {
 	static void fileTimeToUnixTime_(FILETIME &ft, time_t &t) {
 		LONGLONG ll;
 		ll = (((LONGLONG)(ft.dwHighDateTime)) << 32) + ft.dwLowDateTime;
-#	ifdef XYO_COMPILER_MSVC
+#	ifdef XYO_PLATFORM_COMPILER_MSVC
 		t = (time_t)((ll - (116444736000000000ui64)) / 10000000ui64);
 #	endif
-#	ifdef XYO_COMPILER_GCC
+#	ifdef XYO_PLATFORM_COMPILER_GCC
 		t = (time_t)((ll - (116444736000000000ULL)) / 10000000ULL);
 #	endif
 	};
@@ -192,10 +192,10 @@ namespace XYO::System {
 	static void fileTimeToUnixTimeMilliseconds_(FILETIME &ft, time_t &t) {
 		LONGLONG ll;
 		ll = (((LONGLONG)(ft.dwHighDateTime)) << 32) + ft.dwLowDateTime;
-#	ifdef XYO_COMPILER_MSVC
+#	ifdef XYO_PLATFORM_COMPILER_MSVC
 		t = (time_t)((ll - (116444736000000000ui64)) / 10000000ui64);
 #	endif
-#	ifdef XYO_COMPILER_GCC
+#	ifdef XYO_PLATFORM_COMPILER_GCC
 		t = (time_t)((ll - (116444736000000000ULL)) / 10000000ULL);
 #	endif
 	};
@@ -221,10 +221,10 @@ namespace XYO::System {
 		FILETIME ft;
 		SystemTimeToFileTime(&valueTmp_, &ft);
 		fileTimeToUnixTime_(ft, t);
-#	ifdef XYO_COMPILER_MSVC
+#	ifdef XYO_PLATFORM_COMPILER_MSVC
 		return ((uint64_t)t) * (1000ui64) + ((uint64_t)valueTmp_.wMilliseconds);
 #	endif
-#	ifdef XYO_COMPILER_GCC
+#	ifdef XYO_PLATFORM_COMPILER_GCC
 		return ((uint64_t)t) * (1000ULL) + ((uint64_t)valueTmp_.wMilliseconds);
 #	endif
 	};

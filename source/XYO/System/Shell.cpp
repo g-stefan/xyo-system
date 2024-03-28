@@ -9,12 +9,12 @@
 #include <XYO/System/File.hpp>
 #include <XYO/System/Stream.hpp>
 
-#ifdef XYO_OS_WINDOWS
+#ifdef XYO_PLATFORM_OS_WINDOWS
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
 #endif
 
-#ifdef XYO_OS_LINUX
+#ifdef XYO_PLATFORM_OS_LINUX
 #	include <sys/types.h>
 #	include <unistd.h>
 #	include <sys/stat.h>
@@ -293,11 +293,11 @@ namespace XYO::System::Shell {
 
 	String getExecutable() {
 		String exeFile;
-#ifdef XYO_OS_WINDOWS
+#ifdef XYO_PLATFORM_OS_WINDOWS
 		char strExe[4096];
 		GetModuleFileName(nullptr, strExe, 4096);
 #endif
-#ifdef XYO_OS_LINUX
+#ifdef XYO_PLATFORM_OS_LINUX
 		char strExe[PATH_MAX];
 		memset(strExe, 0, sizeof(strExe));
 		if (readlink("/proc/self/exe", strExe, PATH_MAX) == -1) {
@@ -311,11 +311,11 @@ namespace XYO::System::Shell {
 		String pathMain;
 		size_t idx;
 
-#ifdef XYO_OS_WINDOWS
+#ifdef XYO_PLATFORM_OS_WINDOWS
 		char strExe[4096];
 		GetModuleFileName(nullptr, strExe, 4096);
 #endif
-#ifdef XYO_OS_LINUX
+#ifdef XYO_PLATFORM_OS_LINUX
 		char strExe[PATH_MAX];
 		memset(strExe, 0, sizeof(strExe));
 		if (readlink("/proc/self/exe", strExe, PATH_MAX) == -1) {

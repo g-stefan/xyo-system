@@ -6,7 +6,7 @@
 
 #include <XYO/System/Shell.hpp>
 
-#ifdef XYO_OS_WINDOWS
+#ifdef XYO_PLATFORM_OS_WINDOWS
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
 #	include <direct.h>
@@ -143,7 +143,7 @@ namespace XYO::System::Shell {
 
 		// check for simple drive check X: => X:\ .
 		ln = strlen(dir);
-#	ifdef XYO_COMPILER_GCC
+#	ifdef XYO_PLATFORM_COMPILER_GCC
 		if (ln == 0) {
 			ln = strlen(dir); // strange gcc bug!? (ln=0) on X:
 		};

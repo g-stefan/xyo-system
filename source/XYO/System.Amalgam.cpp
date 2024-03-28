@@ -34,6 +34,6 @@
 #include <XYO/System/Shell.cpp>
 #include <XYO/System/ApplicationVersion.cpp>
 
-#ifdef XYO_OS_WINDOWS
+#ifdef XYO_PLATFORM_OS_WINDOWS
 #	pragma comment(lib, "user32.lib")
 #endif

@@ -16,7 +16,7 @@ namespace XYO::System {
 	class FileTime_;
 
 	class FileTime : public Object {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(FileTime);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(FileTime);
 
 		protected:
 			FileTime_ *fileTime;

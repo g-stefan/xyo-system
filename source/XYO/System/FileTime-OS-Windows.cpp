@@ -6,7 +6,7 @@
 
 #include <XYO/System/FileTime.hpp>
 
-#ifdef XYO_OS_WINDOWS
+#ifdef XYO_PLATFORM_OS_WINDOWS
 
 #	define WIN32_LEAN_AND_MEAN
 #	include <windows.h>
@@ -120,10 +120,10 @@ namespace XYO::System {
 
 		LONGLONG ll;
 		ll = (((LONGLONG)(fileTime->value.dwHighDateTime)) << 32) + fileTime->value.dwLowDateTime;
-#	ifdef XYO_COMPILER_MSVC
+#	ifdef XYO_PLATFORM_COMPILER_MSVC
 		t = (time_t)((ll - (116444736000000000ui64)) / 10000000ui64);
 #	endif
-#	ifdef XYO_COMPILER_GCC
+#	ifdef XYO_PLATFORM_COMPILER_GCC
 		t = (time_t)((ll - (116444736000000000ULL)) / 10000000ULL);
 #	endif
 		return (uint64_t)t;
@@ -135,10 +135,10 @@ namespace XYO::System {
 		};
 
 		LONGLONG ll;
-#	ifdef XYO_COMPILER_MSVC
+#	ifdef XYO_PLATFORM_COMPILER_MSVC
 		ll = Int32x32To64(t, 10000000UL) + 116444736000000000ui64;
 #	endif
-#	ifdef XYO_COMPILER_GCC
+#	ifdef XYO_PLATFORM_COMPILER_GCC
 		ll = Int32x32To64(t, 10000000UL) + 116444736000000000ULL;
 #	endif
 		fileTime->value.dwLowDateTime = (DWORD)ll;

@@ -14,7 +14,7 @@
 namespace XYO::System {
 	class DateTime_;
 	class DateTime : public Object {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(DateTime);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(DateTime);
 
 		protected:
 			DateTime_ *dateTime;

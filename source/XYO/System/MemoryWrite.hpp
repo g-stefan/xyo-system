@@ -15,7 +15,7 @@ namespace XYO::System {
 
 	class MemoryWrite : public virtual IWrite,
 	                    public virtual ISeek {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(MemoryWrite);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(MemoryWrite);
 
 		protected:
 			void *data_;

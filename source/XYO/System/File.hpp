@@ -18,7 +18,7 @@ namespace XYO::System {
 	class File : public virtual IRead,
 	             public virtual IWrite,
 	             public virtual ISeek {
-			XYO_DISALLOW_COPY_ASSIGN_MOVE(File);
+			XYO_PLATFORM_DISALLOW_COPY_ASSIGN_MOVE(File);
 
 		protected:
 			File_ *value_;
