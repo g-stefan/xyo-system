@@ -34,6 +34,10 @@
 #else
 #	define XYO_SYSTEM_EXPORT XYO_PLATFORM_LIBRARY_IMPORT
 #endif
+#ifdef XYO_SYSTEM_LIBRARY
+#	undef XYO_SYSTEM_EXPORT
+#	define XYO_SYSTEM_EXPORT
+#endif
 
 // --
 
