@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #ifndef XYO_SYSTEM_IAPPLICATION_HPP
@@ -48,8 +48,8 @@ namespace XYO::System {
 
 #ifdef XYO_PLATFORM_OS_WINDOWS
 
-#	ifndef XYO_SYSTEM_SHELL_HPP
-#		include <XYO/System/Shell.hpp>
+#	ifndef XYO_SYSTEM_SHELLARGUMENTS_HPP
+#		include <XYO/System/ShellArguments.hpp>
 #	endif
 
 // clang-format off
@@ -61,31 +61,27 @@ namespace XYO::System {
 	};\
 	int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, int cmdShow)\
 	{\
+		XYO::System::ShellArguments shellArguments;\
 		char exeName[MAX_PATH];\
-		int cmdN;\
-		char** cmdS;\
 		int retV;\
 		XYO::ManagedMemory::Registry::registryInit();\
 		XYO::ManagedMemory::TIfHasInitMemory<T>::initMemory();\
 		GetModuleFileName(nullptr, exeName, MAX_PATH);\
-		XYO::System::Shell::mainArgsSet(exeName, GetCommandLineA(), cmdN, cmdS);\
-		retV = XYOApplicationMain_(cmdN, cmdS);\
-		XYO::System::Shell::mainArgsDelete(cmdN, cmdS);\
+		shellArguments.set(exeName, GetCommandLineA());\
+		retV = XYOApplicationMain_(shellArguments.cmdN, shellArguments.cmdS);\
 		return retV;\
 	}
 
 #define XYO_APPLICATION_WINMAIN_C(applicationMain) \
 	int __stdcall WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR cmdLine, int cmdShow)\
 	{\
+		XYO::System::ShellArguments shellArguments;\
 		char exeName[MAX_PATH];\
-		int cmdN;\
-		char** cmdS;\
 		int retV;\
 		XYO::ManagedMemory::Registry::registryInit();\
 		GetModuleFileName(nullptr, exeName, MAX_PATH);\
-		XYO::System::Shell::mainArgsSet(exeName, GetCommandLineA(), cmdN, cmdS);\
-		retV = applicationMain(cmdN, cmdS);\
-		XYO::System::Shell::mainArgsDelete(cmdN, cmdS);\
+		shellArguments.set(exeName, GetCommandLineA());\
+		retV = applicationMain(shellArguments.cmdN, shellArguments.cmdS);\
 		return retV;\
 	}
 // clang-format on

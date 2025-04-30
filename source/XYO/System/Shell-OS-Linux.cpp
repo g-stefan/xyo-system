@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #include <XYO/System/Shell.hpp>
@@ -206,20 +206,17 @@ namespace XYO::System::Shell {
 	};
 
 	ProcessId executeNoWait(const char *cmd) {
-		int cmdN;
-		char **cmdS;
 		pid_t pid;
 		int status;
 
-		mainArgsSet(cmd, cmdN, cmdS);
+		XYO::System::ShellArguments shellArguments;
+		shellArguments.set(cmd);
 
-		if (cmdN == 0) {
-			mainArgsDelete(cmdN, cmdS);
+		if (shellArguments.cmdN == 0) {
 			return 0;
 		};
 
-		status = posix_spawn(&pid, cmdS[0], nullptr, nullptr, cmdS, ::environ);
-		mainArgsDelete(cmdN, cmdS);
+		status = posix_spawn(&pid, shellArguments.cmdS[0], nullptr, nullptr, shellArguments.cmdS, ::environ);
 
 		if (status == 0) {
 			return (ProcessId)pid;

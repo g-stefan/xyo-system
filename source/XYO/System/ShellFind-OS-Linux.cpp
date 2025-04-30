@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #include <XYO/System/ShellFind.hpp>
@@ -65,7 +65,7 @@ namespace XYO::System {
 			return false;
 		} else {
 
-			while (!String(shellFind_->finddata->d_name).matchAscii(shellFind_->match_.value())) {
+			while (!String(shellFind_->finddata->d_name).matchASCII(shellFind_->match_.value())) {
 				shellFind_->finddata = readdir(shellFind_->hfind);
 				if (shellFind_->finddata != nullptr) {
 				} else {
@@ -118,7 +118,7 @@ namespace XYO::System {
 			if (shellFind_->finddata == nullptr) {
 				return false;
 			} else {
-				while (!String(shellFind_->finddata->d_name).matchAscii(shellFind_->match_)) {
+				while (!String(shellFind_->finddata->d_name).matchASCII(shellFind_->match_)) {
 					shellFind_->finddata = readdir(shellFind_->hfind);
 					if (shellFind_->finddata == nullptr) {
 						return false;

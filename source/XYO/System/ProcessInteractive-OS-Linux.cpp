@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #include <XYO/System/ProcessInteractive.hpp>
@@ -111,17 +111,15 @@ namespace XYO::System {
 			//
 			// exit(system(cmdLine));
 			//
+			XYO::System::ShellArguments shellArguments;
 
-			int cmdN;
-			char **cmdS;
-			Shell::mainArgsSet(cmdLine, cmdN, cmdS);
+			shellArguments.set(cmdLine);
 
-			if (cmdN == 0) {
-				Shell::mainArgsDelete(cmdN, cmdS);
+			if (shellArguments.cmdN == 0) {
 				exit(0);
 			};
 
-			execvp(cmdS[0], cmdS);
+			execvp(shellArguments.cmdS[0], shellArguments.cmdS);
 
 			exit(errno);
 		};
@@ -278,8 +276,8 @@ namespace XYO::System {
 		return -1;
 	};
 
-	void ProcessInteractive::useConPTY(bool value){
-	    // Nothing to do
+	void ProcessInteractive::useConPTY(bool value) {
+		// Nothing to do
 	};
 
 };

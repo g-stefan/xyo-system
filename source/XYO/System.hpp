@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #ifndef XYO_SYSTEM_HPP
@@ -26,6 +26,7 @@
 #include <XYO/System/FileTime.hpp>
 #include <XYO/System/File.hpp>
 #include <XYO/System/ShellFind.hpp>
+#include <XYO/System/ShellArguments.hpp>
 #include <XYO/System/Shell.hpp>
 #include <XYO/System/IApplication.hpp>
 #include <XYO/System/ApplicationVersion.hpp>

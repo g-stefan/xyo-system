@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #ifndef XYO_SYSTEM_SHELL_HPP
@@ -13,6 +13,10 @@
 
 #ifndef XYO_SYSTEM_SHELLFIND_HPP
 #	include <XYO/System/ShellFind.hpp>
+#endif
+
+#ifndef XYO_SYSTEM_SHELLARGUMENTS_HPP
+#	include <XYO/System/ShellArguments.hpp>
 #endif
 
 #ifndef XYO_SYSTEM_BUFFER_HPP
@@ -97,13 +101,7 @@ namespace XYO::System::Shell {
 	XYO_SYSTEM_EXPORT bool isChanged(const String &target, TDynamicArray<String> &source);
 	XYO_SYSTEM_EXPORT bool isChangedRecursive(const char *target, const char *source, const char *basePath = nullptr);
 	//
-	XYO_SYSTEM_EXPORT bool copyFileIfExists(const String &source, const String &target);
-	//
-	XYO_SYSTEM_EXPORT void mainArgsFilter(char *cmdX);
-	XYO_SYSTEM_EXPORT void mainArgsParse(bool commit, const char *cmdLine, int &cmdN, char **&cmdS);
-	XYO_SYSTEM_EXPORT void mainArgsDelete(int cmdN, char **cmdS);
-	XYO_SYSTEM_EXPORT void mainArgsSet(const char *exeName, const char *cmdLine, int &cmdN, char **&cmdS);
-	XYO_SYSTEM_EXPORT void mainArgsSet(const char *cmdLine, int &cmdN, char **&cmdS);
+	XYO_SYSTEM_EXPORT bool copyFileIfExists(const String &source, const String &target);	
 	//
 	XYO_SYSTEM_EXPORT bool getFileSize(const char *fileName, int64_t &size);
 	//

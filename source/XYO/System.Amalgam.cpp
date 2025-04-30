@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2024 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #include <XYO/System.hpp>
@@ -32,6 +32,7 @@
 #include <XYO/System/Shell-OS-Linux.cpp>
 #include <XYO/System/Shell-OS-Windows.cpp>
 #include <XYO/System/Shell.cpp>
+#include <XYO/System/ShellArguments.cpp>
 #include <XYO/System/ApplicationVersion.cpp>
 
 #ifdef XYO_PLATFORM_OS_WINDOWS
