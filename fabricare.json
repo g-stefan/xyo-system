@@ -14,6 +14,22 @@
 				]
 			},
 			{
+				"name": "xyo-system.static",
+				"make": "lib",
+				"category": "make",
+				"SPDX-License-Identifier": "MIT",
+				"sourcePath" : "XYO/System",
+				"dependency" : [
+					"xyo-encoding.static",
+					"xyo-multithreading.static"
+				],
+				"dependencyDefines" : [
+					"XYO_SYSTEM_LIBRARY"
+				],
+				"linkVersion": "xyo-system",
+				"crt": "static"
+			},
+			{
 				"name" : "test.01",
 				"make" : "exe",
 				"category" : "test",
