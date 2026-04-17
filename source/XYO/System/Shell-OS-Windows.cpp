@@ -1,7 +1,7 @@
 // System
-// Copyright (c) 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2026 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2026 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #include <XYO/System/Shell.hpp>
@@ -28,7 +28,14 @@ namespace XYO::System::Shell {
 	};
 
 	bool getcwd(char *buffer, size_t bufferSize) {
-		return (_getcwd(buffer, bufferSize) != nullptr);
+		if(_getcwd(buffer, bufferSize) != nullptr) {
+			return true;
+		};
+		if(bufferSize>=2){
+			strcpy(buffer,".");
+			return true;
+		};
+		return false;
 	};
 
 	bool copy(const char *source, const char *destination) {

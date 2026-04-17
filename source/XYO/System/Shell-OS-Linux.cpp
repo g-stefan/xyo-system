@@ -1,10 +1,11 @@
 // System
-// Copyright (c) 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
+// Copyright (c) 2016-2026 Grigore Stefan <g_stefan@yahoo.com>
 // MIT License (MIT) <http://opensource.org/licenses/MIT>
-// SPDX-FileCopyrightText: 2016-2025 Grigore Stefan <g_stefan@yahoo.com>
+// SPDX-FileCopyrightText: 2016-2026 Grigore Stefan <g_stefan@yahoo.com>
 // SPDX-License-Identifier: MIT
 
 #include <XYO/System/Shell.hpp>
+#include <XYO/System/DateTime.hpp>
 
 #ifdef XYO_PLATFORM_OS_LINUX
 
@@ -50,7 +51,41 @@ namespace XYO::System::Shell {
 	};
 
 	bool getcwd(char *buffer, size_t bufferSize) {
-		return (::getcwd(buffer, bufferSize) != nullptr);
+		if (::getcwd(buffer, bufferSize) != nullptr) {
+			return true;
+		};
+#	ifdef XYO_PLATFORM_OS_EMSCRIPTEN
+		// getcwd fail on windows (implementation) - workaround until fixed
+		char *envValue = getenv("EMSCRIPTEN_PLATFORM");
+		if (envValue != nullptr) {
+			if (strcmp(envValue, "win32") == 0) {
+				char *tmpPath = getenv("TEMP");
+				if (tmpPath != nullptr) {
+					String tmpFile = tmpPath;
+					uint64_t timeStamp = DateTime::timestampInMilliseconds();
+					char tmpBuffer[64];
+					sprintf(tmpBuffer, "%llu", timeStamp);
+					tmpFile << "\\" << tmpBuffer;
+					String tmpCmd = "cd";
+					tmpCmd << " 1>\"" << tmpFile << "\"";
+					system(tmpCmd);
+					String tmpContent;
+					if (fileGetContentsUTF8(tmpFile, tmpContent, UTFStreamMode::UTF8)) {
+						tmpContent = tmpContent.trimASCII();
+						strncpy(buffer, tmpContent.value(), bufferSize);
+						remove(tmpFile);
+						return true;
+					};
+					remove(tmpFile);
+				};
+			};
+		};
+#	endif
+		if (bufferSize >= 2) {
+			strcpy(buffer, ".");
+			return true;
+		};
+		return false;
 	};
 
 	bool copy(const char *source, const char *destination) {
@@ -194,7 +229,15 @@ namespace XYO::System::Shell {
 	};
 
 	bool realpath(const char *fileNameIn, char *fileNameOut, long int filenameOutSize) {
+#	ifdef XYO_PLATFORM_OS_EMSCRIPTEN
+		if (::realpath(fileNameIn, fileNameOut) != nullptr) {
+			return true;
+		};
+		strncpy(fileNameOut, fileNameIn, filenameOutSize);
+		return true;
+#	else
 		return (::realpath(fileNameIn, fileNameOut) != nullptr);
+#	endif
 	};
 
 	uint32_t execute(const char *cmd) {
@@ -268,7 +311,11 @@ namespace XYO::System::Shell {
 	const char *envPathSeparator = ":";
 
 	String normalize(const String &fileOrDirectoryName) {
+#	ifdef XYO_PLATFORM_OS_EMSCRIPTEN
+		return fileOrDirectoryName.replace("\\", pathSeparator);
+#	else
 		return fileOrDirectoryName;
+#	endif
 	};
 
 	bool getFileSize(const char *fileName, int64_t &size) {
