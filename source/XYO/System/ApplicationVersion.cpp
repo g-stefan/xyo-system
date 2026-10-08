@@ -9,7 +9,12 @@
 namespace XYO::System::ApplicationVersion {
 
 	bool getVersion(const char *version, int &major, int &minor, int &patch, int &build) {
-		return (sscanf(version, "%d.%d.%d.%d", &major, &minor, &patch, &build) == 4);
+		// 1 to 4 parts, missing parts are 0 (7.10.0 is 7.10.0.0)
+		major = 0;
+		minor = 0;
+		patch = 0;
+		build = 0;
+		return (sscanf(version, "%d.%d.%d.%d", &major, &minor, &patch, &build) >= 1);
 	};
 
 	String setVersion(int major, int minor, int patch, int build) {

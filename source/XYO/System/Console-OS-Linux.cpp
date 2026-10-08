@@ -32,43 +32,53 @@
 
 namespace XYO::System::Console {
 
-	bool keyHit() {
-		bool retV;
-		struct termios oldTerm, newTerm;
-		struct timeval tv;
-		fd_set fs;
-
-		memset(&fs, 0, sizeof(fs));
-		FD_ZERO(&fs);
-		tv.tv_sec = 0;
-		tv.tv_usec = 0;
-		tcgetattr(STDIN_FILENO, &oldTerm);
+	// Disable line buffering and echo, false if stdin is not a terminal
+	static bool consoleSetRaw_(struct termios &oldTerm) {
+		struct termios newTerm;
+		if (tcgetattr(STDIN_FILENO, &oldTerm) != 0) {
+			return false;
+		};
 		newTerm = oldTerm;
 		newTerm.c_lflag &= ~(ICANON | ECHO);
 		tcsetattr(STDIN_FILENO, TCSANOW, &newTerm);
+		return true;
+	};
+
+	bool keyHit() {
+		struct termios oldTerm;
+		struct timeval tv;
+		fd_set fs;
+		int ret;
+
+		// not a terminal (pipe, file), there is nothing to change or restore
+		bool isTerminal = consoleSetRaw_(oldTerm);
+
+		FD_ZERO(&fs);
 		FD_SET(STDIN_FILENO, &fs);
-		select(STDIN_FILENO + 1, &fs, nullptr, nullptr, &tv);
+		tv.tv_sec = 0;
+		tv.tv_usec = 0;
+		ret = select(STDIN_FILENO + 1, &fs, nullptr, nullptr, &tv);
 
-		retV = FD_ISSET(STDIN_FILENO, &fs);
-
-		tcsetattr(STDIN_FILENO, TCSANOW, &oldTerm);
-		return retV;
+		if (isTerminal) {
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldTerm);
+		};
+		// on error the set is undefined
+		return (ret > 0) && FD_ISSET(STDIN_FILENO, &fs);
 	};
 
 	char getChar() {
 		char retV;
-		struct termios oldTerm, newTerm;
+		struct termios oldTerm;
 
-		tcgetattr(STDIN_FILENO, &oldTerm);
-		newTerm = oldTerm;
-		newTerm.c_lflag &= ~(ICANON | ECHO);
-		tcsetattr(STDIN_FILENO, TCSANOW, &newTerm);
+		bool isTerminal = consoleSetRaw_(oldTerm);
 
-		if (read(0, &retV, 1) != 1) {
+		if (read(STDIN_FILENO, &retV, 1) != 1) {
 			retV = 0;
 		};
 
-		tcsetattr(STDIN_FILENO, TCSANOW, &oldTerm);
+		if (isTerminal) {
+			tcsetattr(STDIN_FILENO, TCSANOW, &oldTerm);
+		};
 		return retV;
 	};
 

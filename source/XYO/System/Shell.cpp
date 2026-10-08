@@ -34,9 +34,24 @@ namespace XYO::System::Shell {
 		return fileName;
 	};
 
+	// Index of the extension dot, only in the file name, not in the path (dir.v2/file)
+	static bool shellFileExtensionIndex_(const String &fileName, size_t &index) {
+		String fileName_ = normalize(fileName);
+		size_t indexPath;
+		if (!fileName_.indexOfFromEnd(".", 0, index)) {
+			return false;
+		};
+		if (fileName_.indexOfFromEnd(pathSeparator, 0, indexPath)) {
+			if (indexPath > index) {
+				return false;
+			};
+		};
+		return true;
+	};
+
 	String getFileExtension(const String &fileName) {
 		size_t index;
-		if (fileName.indexOfFromEnd(".", 0, index)) {
+		if (shellFileExtensionIndex_(fileName, index)) {
 			return fileName.substring(index + 1);
 		};
 		return "";
@@ -44,10 +59,27 @@ namespace XYO::System::Shell {
 
 	String getFileBasename(const String &fileName) {
 		size_t index;
-		if (fileName.indexOfFromEnd(".", 0, index)) {
+		if (shellFileExtensionIndex_(fileName, index)) {
 			return fileName.substring(0, index);
 		};
 		return fileName;
+	};
+
+	// Size of an open file, the file position is set to the begin
+	static bool shellOpenFileSize_(File &file, size_t &size) {
+		if (!file.seekFromEnd(0)) {
+			return false;
+		};
+		uint64_t fileSize = file.seekTell();
+		if (!file.seekFromBegin(0)) {
+			return false;
+		};
+		// seekTell returns (uint64_t)-1 on error, keep room for the string terminator
+		if (fileSize >= static_cast<uint64_t>(SIZE_MAX)) {
+			return false;
+		};
+		size = static_cast<size_t>(fileSize);
+		return true;
 	};
 
 	String getFilePath(const String &fileName) {
@@ -73,9 +105,10 @@ namespace XYO::System::Shell {
 		if (file.openRead(fileName)) {
 			size_t size;
 
-			file.seekFromEnd(0);
-			size = file.seekTell();
-			file.seekFromBegin(0);
+			if (!shellOpenFileSize_(file, size)) {
+				file.close();
+				return false;
+			};
 
 			TPointer<StringReference> result(TMemory<StringReference>::newMemory());
 			result->init(size);
@@ -143,7 +176,7 @@ namespace XYO::System::Shell {
 	};
 
 	bool removeEmptyDir(const char *dirName) {
-		if (!isEmptyDir(dirName)) {
+		if (isEmptyDir(dirName)) {
 			return rmdir(dirName);
 		};
 		return false;
@@ -227,7 +260,9 @@ namespace XYO::System::Shell {
 		String line;
 		if (file.openRead(fileName)) {
 			output = "";
-			while (Stream::readLn(file, line, lineSize)) {
+			// a file, reading ahead is safe and faster than one byte at a time
+			Stream::LineRead lineRead(file, file);
+			while (lineRead.readLn(line, lineSize)) {
 				if (linesToSkip <= 0) {
 					output << line;
 					continue;
@@ -245,11 +280,13 @@ namespace XYO::System::Shell {
 		if (file.openRead(fileName)) {
 			size_t size;
 
-			file.seekFromEnd(0);
-			size = file.seekTell();
-			file.seekFromBegin(0);
+			if (!shellOpenFileSize_(file, size)) {
+				file.close();
+				return false;
+			};
 
-			output.setSize(size);
+			// the file is read over all the buffer, the old content is not needed
+			output.allocate(size);
 
 			if (file.read(output.buffer, size) == size) {
 				file.close();
@@ -288,41 +325,56 @@ namespace XYO::System::Shell {
 
 	bool isAbsolutePath(const char *path) {
 		String path_ = normalize(path);
-		return (path_[0] == pathSeparator[0]);
+		if (path_.isEmpty()) {
+			return false;
+		};
+		if (path_[0] == pathSeparator[0]) {
+			return true;
+		};
+#ifdef XYO_PLATFORM_OS_WINDOWS
+		// X:\path, but not X:path (relative to the current directory of drive X)
+		if (path_.length() >= 3) {
+			char drive = path_[0];
+			if (((drive >= 'A' && drive <= 'Z') || (drive >= 'a' && drive <= 'z')) && path_[1] == ':' && path_[2] == pathSeparator[0]) {
+				return true;
+			};
+		};
+#endif
+		return false;
 	};
 
-	String getExecutable() {
-		String exeFile;
+	// Full name of the executable, "." if it can not be found
+	static String shellExecutableName_() {
 #ifdef XYO_PLATFORM_OS_WINDOWS
 		char strExe[4096];
-		GetModuleFileName(nullptr, strExe, 4096);
+		DWORD ln = GetModuleFileNameA(nullptr, strExe, sizeof(strExe));
+		if (ln == 0 || ln >= sizeof(strExe)) {
+			// failed or truncated
+			return ".";
+		};
+		return strExe;
 #endif
 #ifdef XYO_PLATFORM_OS_LINUX
 		char strExe[PATH_MAX];
-		memset(strExe, 0, sizeof(strExe));
-		if (readlink("/proc/self/exe", strExe, PATH_MAX) == -1) {
-			strcpy(strExe, ".");
+		// readlink does not write the string terminator
+		ssize_t ln = readlink("/proc/self/exe", strExe, sizeof(strExe) - 1);
+		if (ln <= 0) {
+			return ".";
 		};
+		strExe[ln] = 0;
+		return strExe;
 #endif
-		return normalize(strExe);
+	};
+
+	String getExecutable() {
+		return normalize(shellExecutableName_());
 	};
 
 	String getExecutablePath() {
 		String pathMain;
 		size_t idx;
 
-#ifdef XYO_PLATFORM_OS_WINDOWS
-		char strExe[4096];
-		GetModuleFileName(nullptr, strExe, 4096);
-#endif
-#ifdef XYO_PLATFORM_OS_LINUX
-		char strExe[PATH_MAX];
-		memset(strExe, 0, sizeof(strExe));
-		if (readlink("/proc/self/exe", strExe, PATH_MAX) == -1) {
-			strcpy(strExe, ".");
-		};
-#endif
-		pathMain = normalize(strExe);
+		pathMain = normalize(shellExecutableName_());
 		if (pathMain.indexOfFromEnd(pathSeparator, 0, idx)) {
 			pathMain = pathMain.substring(0, idx);
 		} else {
@@ -348,7 +400,8 @@ namespace XYO::System::Shell {
 		findDir += "*";
 		if (scan.find(findDir)) {
 			for (; scan; scan.next()) {
-				if (scan.isDirectory) {
+				// a link is not entered: removed / moved as it is, not what it points to
+				if (scan.isDirectory && !scan.isLink) {
 					if (StringCore::isEqual(scan.name, "..")) {
 						continue;
 					};
@@ -406,6 +459,7 @@ namespace XYO::System::Shell {
 			String dirName = getFilePathX(fileName);
 			if (scan.find(fileName)) {
 				for (; scan; scan.next()) {
+					// files and links to files (a link to a directory is isDirectory)
 					if (!scan.isDirectory) {
 						fileList[m] = dirName;
 						fileList[m] += scan.name;
@@ -435,6 +489,7 @@ namespace XYO::System::Shell {
 			String dirName = getFilePathX(fileName);
 			if (scan.find(fileName)) {
 				for (; scan; scan.next()) {
+					// directories and links to directories, a linked directory is like any other
 					if (scan.isDirectory) {
 
 						if (StringCore::isEqual(scan.name, "..")) {
@@ -482,6 +537,10 @@ namespace XYO::System::Shell {
 				continue;
 			};
 			if (!mkdir(dirList[k])) {
+				// created in the meantime by another process or thread (parallel builds), that is fine
+				if (directoryExists(dirList[k])) {
+					continue;
+				};
 				return false;
 			};
 		};
@@ -497,10 +556,11 @@ namespace XYO::System::Shell {
 		String findDir = dirName;
 		findDir += pathSeparator;
 		findDir += "*";
-		bool hasFiles = false;
+		bool isEmpty = true;
 		if (scan.find(findDir)) {
 			for (; scan; scan.next()) {
-				if (scan.isDirectory) {
+				// a link is not entered: removed / moved as it is, not what it points to
+				if (scan.isDirectory && !scan.isLink) {
 					if (StringCore::isEqual(scan.name, "..")) {
 						continue;
 					};
@@ -512,23 +572,74 @@ namespace XYO::System::Shell {
 					dirList[k] += pathSeparator;
 					dirList[k] += scan.name;
 					++k;
+					continue;
 				};
-				hasFiles = true;
+				isEmpty = false;
 			};
 		};
-		//
+		// Remove all empty subdirectories, not only the ones before the first non-empty one
 		for (k = 0; k < dirList.length(); ++k) {
 			if (!removeEmptyDirRecursively(dirList[k])) {
-				return false;
+				isEmpty = false;
 			};
 		};
-		if (hasFiles) {
+		if (!isEmpty) {
 			return false;
 		};
 		return rmdir(dirName);
 	};
 
+	// The real path, links resolved. On Windows realpath (GetFullPathName) does not resolve junctions.
+	static bool shellFinalPath_(const String &path, String &out) {
+#ifdef XYO_PLATFORM_OS_WINDOWS
+		HANDLE hFile = CreateFileA(path, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+		if (hFile == INVALID_HANDLE_VALUE) {
+			return false;
+		};
+		char buffer[4096];
+		DWORD ln = GetFinalPathNameByHandleA(hFile, buffer, sizeof(buffer), FILE_NAME_NORMALIZED | VOLUME_NAME_DOS);
+		CloseHandle(hFile);
+		if (ln == 0 || ln >= sizeof(buffer)) {
+			return false;
+		};
+		out = buffer;
+		return true;
+#else
+		return realPath(path, out);
+#endif
+	};
+
+	// path is dir or inside dir (real paths)
+	static bool shellIsInside_(const String &path, const String &dir) {
+		if (path.length() < dir.length() || dir.isEmpty()) {
+			return false;
+		};
+		String begin = path.substring(0, dir.length());
+#ifdef XYO_PLATFORM_OS_WINDOWS
+		if (StringCore::compareIgnoreCaseASCII(begin.value(), dir.value()) != 0) {
+			return false;
+		};
+#else
+		if (!(begin == dir)) {
+			return false;
+		};
+#endif
+		if (path.length() == dir.length()) {
+			return true;
+		};
+		// dir is a root ("/", "C:\") or the next character starts a sub directory
+		return (dir[dir.length() - 1] == pathSeparator[0]) || (path[dir.length()] == pathSeparator[0]);
+	};
+
+	// chain: the source directories being copied, from the first one to this one
+	static bool shellCopyDirRecursively_(const String &source_, const String &target_, TDynamicArray<String> &chain);
+
 	bool copyDirRecursively(const String &source_, const String &target_) {
+		TDynamicArray<String> chain;
+		return shellCopyDirRecursively_(source_, target_, chain);
+	};
+
+	static bool shellCopyDirRecursively_(const String &source_, const String &target_, TDynamicArray<String> &chain) {
 		String source = normalize(source_);
 		String target = normalize(target_);
 		TDynamicArray<String> dirList;
@@ -537,12 +648,22 @@ namespace XYO::System::Shell {
 		ShellFind scan;
 		k = 0;
 		m = 0;
+
+		chain.push(source);
+		struct ChainPop {
+				TDynamicArray<String> &chain;
+				size_t length;
+				~ChainPop() {
+					chain.setLength(length);
+				};
+		} chainPop{chain, chain.length() - 1};
 		String findDir = source;
 		findDir += pathSeparator;
 		findDir += "*";
 		if (scan.find(findDir)) {
 			for (; scan; scan.next()) {
-				if (scan.isDirectory) {
+				// a link to a directory goes with the files, copied below with a check for endless links
+				if (scan.isDirectory && !scan.isLink) {
 					if (StringCore::isEqual(scan.name, "..")) {
 						continue;
 					};
@@ -583,7 +704,7 @@ namespace XYO::System::Shell {
 			pathTarget += pathSeparator;
 			pathTarget += dirList[k];
 
-			if (!copyDirRecursively(pathSource, pathTarget)) {
+			if (!shellCopyDirRecursively_(pathSource, pathTarget, chain)) {
 				return false;
 			};
 		};
@@ -598,6 +719,29 @@ namespace XYO::System::Shell {
 			fileTarget = target;
 			fileTarget += pathSeparator;
 			fileTarget += fileList[k];
+
+			// A link to a directory (in fileList, see above):
+			// copy what it points to, like cp -rL and robocopy. Not if it points to a directory
+			// being copied (or one that contains it), directly or through other links: it would never end.
+			if (directoryExists(fileSource)) {
+				String realLink;
+				if (!shellFinalPath_(fileSource, realLink)) {
+					return false;
+				};
+				for (size_t n = 0; n < chain.length(); ++n) {
+					String realChain;
+					if (!shellFinalPath_(chain[n], realChain)) {
+						return false;
+					};
+					if (shellIsInside_(realChain, realLink)) {
+						return false;
+					};
+				};
+				if (!shellCopyDirRecursively_(fileSource, fileTarget, chain)) {
+					return false;
+				};
+				continue;
+			};
 
 			if (!copy(fileSource, fileTarget)) {
 				return false;
@@ -621,7 +765,8 @@ namespace XYO::System::Shell {
 		findDir += "*";
 		if (scan.find(findDir)) {
 			for (; scan; scan.next()) {
-				if (scan.isDirectory) {
+				// a link is not entered: removed / moved as it is, not what it points to
+				if (scan.isDirectory && !scan.isLink) {
 					if (StringCore::isEqual(scan.name, "..")) {
 						continue;
 					};
@@ -716,7 +861,8 @@ namespace XYO::System::Shell {
 		findDir += "*";
 		if (scan.find(findDir)) {
 			for (; scan; scan.next()) {
-				if (scan.isDirectory) {
+				// a link is not entered: removed / moved as it is, not what it points to
+				if (scan.isDirectory && !scan.isLink) {
 					if (StringCore::isEqual(scan.name, "..")) {
 						continue;
 					};
@@ -782,6 +928,7 @@ namespace XYO::System::Shell {
 		};
 		if (scan.find(findDir)) {
 			for (; scan; scan.next()) {
+				// files and links to files (a link to a directory is isDirectory)
 				if (!scan.isDirectory) {
 					fileList[m] = scan.name;
 					++m;
@@ -846,7 +993,9 @@ namespace XYO::System::Shell {
 		};
 		if (fileIn.openRead(fileInName)) {
 			if (fileOut.openWrite(fileOutName)) {
-				while (Stream::readLn(fileIn, line, maxLineSize)) {
+				// a file, reading ahead is safe and faster than one byte at a time
+				Stream::LineRead lineRead(fileIn, fileIn);
+				while (lineRead.readLn(line, maxLineSize)) {
 					lineFinal = line;
 					for (k = 0; k < textInOut.length(); ++k) {
 						lineFinal = lineFinal.replace(textInOut[k][0], textInOut[k][1]);
@@ -878,28 +1027,18 @@ namespace XYO::System::Shell {
 		return false;
 	};
 
-	bool isChangedRecursive(const char *target, const char *source, const char *basePath) {
-		int k;
+	// chain: the source directories being checked, from the first one to this one
+	static bool shellIsChangedRecursive_(const char *target, const String &source, TDynamicArray<String> &chain) {
+		size_t k;
 		size_t index;
 		TDynamicArray<String> fileList;
 		String pathToSearch = source;
-		String basePathX;
-		String fileName;
-
-		if (!fileExists(target)) {
-			return true;
-		};
 
 		if (!(pathToSearch.indexOf("*", 0, index) || pathToSearch.indexOf("?", 0, index))) {
 			pathToSearch += "/*";
 		};
 
-		if (basePath) {
-			basePathX = basePath;
-		} else {
-			basePathX = getFilePathX(pathToSearch);
-		};
-
+		// files and links to files (the time of what the link points to)
 		getFileList(pathToSearch, fileList);
 		for (k = 0; k < fileList.length(); ++k) {
 			if (compareLastWriteTime(target, fileList[k]) < 0) {
@@ -907,14 +1046,61 @@ namespace XYO::System::Shell {
 			};
 		};
 
-		getDirList(pathToSearch, fileList);
-		for (k = 0; k < fileList.length(); ++k) {
-			if (isChangedRecursive(target, fileList[k], basePathX)) {
+		chain.push(source);
+		struct ChainPop {
+				TDynamicArray<String> &chain;
+				size_t length;
+				~ChainPop() {
+					chain.setLength(length);
+				};
+		} chainPop{chain, chain.length() - 1};
+
+		// directories and links to directories, as getDirList
+		ShellFind scan;
+		String dirName = getFilePathX(pathToSearch);
+		for (scan.find(pathToSearch); scan; scan.next()) {
+			if (!scan.isDirectory) {
+				continue;
+			};
+			if (StringCore::isEqual(scan.name, "..") || StringCore::isEqual(scan.name, ".")) {
+				continue;
+			};
+			String path = dirName;
+			path += scan.name;
+			if (scan.isLink) {
+				// A link to a directory being checked (or one that contains it), directly or through
+				// other links, would never end: it is skipped, what is in it is checked already.
+				String realLink;
+				if (!shellFinalPath_(path, realLink)) {
+					continue;
+				};
+				bool isLoop = false;
+				for (size_t n = 0; n < chain.length(); ++n) {
+					String realChain;
+					if (shellFinalPath_(chain[n], realChain) && shellIsInside_(realChain, realLink)) {
+						isLoop = true;
+						break;
+					};
+				};
+				if (isLoop) {
+					continue;
+				};
+			};
+			if (shellIsChangedRecursive_(target, path, chain)) {
 				return true;
 			};
 		};
 
 		return false;
+	};
+
+	// Linked directories and files are checked like any other (the build system sees them), basePath is not used
+	bool isChangedRecursive(const char *target, const char *source, const char *basePath) {
+		if (!fileExists(target)) {
+			return true;
+		};
+		TDynamicArray<String> chain;
+		return shellIsChangedRecursive_(target, source, chain);
 	};
 
 	bool copyFileIfExists(const String &source, const String &target) {
@@ -965,7 +1151,8 @@ namespace XYO::System::Shell {
 		findDir += "*";
 		if (scan.find(findDir)) {
 			for (; scan; scan.next()) {
-				if (scan.isDirectory) {
+				// a link is not entered: removed / moved as it is, not what it points to
+				if (scan.isDirectory && !scan.isLink) {
 					if (StringCore::isEqual(scan.name, "..")) {
 						continue;
 					};
@@ -1031,9 +1218,10 @@ namespace XYO::System::Shell {
 				size_t size;
 				size_t strSize;
 
-				file.seekFromEnd(0);
-				size = file.seekTell();
-				file.seekFromBegin(0);
+				if (!shellOpenFileSize_(file, size)) {
+					file.close();
+					return false;
+				};
 				strSize = size;
 				if (!((mode == UTFStreamMode::None) || (mode == UTFStreamMode::UTF8))) {
 					strSize = size * 2;
@@ -1105,7 +1293,21 @@ namespace XYO::System::Shell {
 			if (utf8Read.open(&fileIn, mode)) {
 				if (fileOut.openWrite(fileOutName)) {
 					if (utf8Write.open(&fileOut, mode)) {
-						while (Stream::readLn(utf8Read, line, maxLineSize)) {
+						// None / UTF8: UTF8Read passes the bytes unchanged, read the lines from the file,
+						// reading ahead is safe and faster than one byte at a time.
+						// UTF16 / UTF32: UTF8Read converts and can not seek, one byte at a time.
+						bool isPassThrough = (mode == UTFStreamMode::None) || (mode == UTFStreamMode::UTF8);
+						Stream::LineRead lineRead(fileIn, fileIn);
+						for (;;) {
+							bool isLine;
+							if (isPassThrough) {
+								isLine = lineRead.readLn(line, maxLineSize);
+							} else {
+								isLine = Stream::readLn(utf8Read, line, maxLineSize);
+							};
+							if (!isLine) {
+								break;
+							};
 							lineFinal = line;
 							for (k = 0; k < textInOut.length(); ++k) {
 								lineFinal = lineFinal.replace(textInOut[k][0], textInOut[k][1]);

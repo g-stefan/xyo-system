@@ -11,7 +11,7 @@ namespace XYO::System {
 
 	bool ProcessInteractive::run(const char *cmdLine, String &retV, bool useConPTY_) {
 		ProcessInteractive pInteractive;
-		char buffer[32768];
+		char buffer[XYO_SYSTEM_PROCESS_INTERACTIVE_BUFFER_SIZE];
 		int bufferLn = 0;
 
 		retV.empty();
@@ -23,15 +23,19 @@ namespace XYO::System {
 
 		do {
 			if (pInteractive.waitToRead(1) > 0) {
-				bufferLn = pInteractive.read(buffer, 32768);
+				bufferLn = pInteractive.read(buffer, XYO_SYSTEM_PROCESS_INTERACTIVE_BUFFER_SIZE);
 				if (bufferLn > 0) {
 					retV.concatenate(buffer, bufferLn);
 				};
 			};
 		} while (pInteractive.isRunning());
 
-		bufferLn = pInteractive.read(buffer, 32768);
-		if (bufferLn > 0) {
+		// The process ended, read all the output left in the pipe
+		while (pInteractive.waitToRead(1) > 0) {
+			bufferLn = pInteractive.read(buffer, XYO_SYSTEM_PROCESS_INTERACTIVE_BUFFER_SIZE);
+			if (bufferLn <= 0) {
+				break;
+			};
 			retV.concatenate(buffer, bufferLn);
 		};
 		pInteractive.close();
@@ -47,15 +51,29 @@ namespace XYO::System {
 			return false;
 		};
 
+		bool isStopped = false;
 		do {
 			if (pInteractive.waitToRead(1) > 0) {
 				if (Stream::readLn(pInteractive, line, lineMaxLn)) {
 					if (!(*processLn)(pInteractive, line, this_)) {
+						isStopped = true;
 						break;
 					};
 				};
 			};
 		} while (pInteractive.isRunning());
+
+		// The process ended, process the lines left in the pipe
+		if (!isStopped) {
+			while (pInteractive.waitToRead(1) > 0) {
+				if (!Stream::readLn(pInteractive, line, lineMaxLn)) {
+					break;
+				};
+				if (!(*processLn)(pInteractive, line, this_)) {
+					break;
+				};
+			};
+		};
 
 		pInteractive.close();
 		return true;

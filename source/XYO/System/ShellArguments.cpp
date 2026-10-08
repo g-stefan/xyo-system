@@ -238,13 +238,15 @@ namespace XYO::System {
 		reset();
 		parse(false, cmdLine);
 
-		cmdS = new char *[cmdN];
+		// one extra slot, cmdS is a null terminated argv
+		cmdS = new char *[cmdN + 1];
 		cmdSize = strlen(exeName);
 		cmdS[0] = new char[cmdSize + 1];
 		memcpy(cmdS[0], exeName, cmdSize);
 		cmdS[0][cmdSize] = '\0';
 
 		parse(true, cmdLine);
+		cmdS[cmdN] = nullptr;
 
 		for (k = 0; k < cmdN; ++k) {
 			filter(cmdS[k]);
@@ -253,33 +255,20 @@ namespace XYO::System {
 		if (strlen(cmdS[0]) == 0) {
 			delete[] cmdS[0];
 			--cmdN;
-			memcpy(cmdS, cmdS + 1, cmdN * sizeof(char *));
+			memmove(cmdS, cmdS + 1, cmdN * sizeof(char *));
 			cmdS[cmdN] = nullptr;
 			return;
 		};
 
+		// The first word of the command line is always the program, as it was started
+		// (GetCommandLine: "app", "app.exe", ".\app", a full path, ...), the C runtime uses the same rule.
+		// exeName replaces it. Comparing the two (even as real paths) fails for "app" started
+		// from PATH or without .exe, then the program name would be argv[1].
 		if (cmdN > 1) {
-			if (strlen(cmdS[0]) > 0) {
-				if (strcmp(cmdS[0], cmdS[1]) == 0) {
-					delete[] cmdS[0];
-					--cmdN;
-					memcpy(cmdS, cmdS + 1, cmdN * sizeof(char *));
-					cmdS[cmdN] = nullptr;
-				} else {
-					char fullPath1[4096];
-					char fullPath2[4096];
-					if (XYO::System::Shell::realpath(cmdS[0], fullPath1, 4096)) {
-						if (XYO::System::Shell::realpath(cmdS[1], fullPath2, 4096)) {
-							if (StringCore::compareIgnoreCaseASCII(fullPath1, fullPath2) == 0) {
-								delete[] cmdS[0];
-								--cmdN;
-								memcpy(cmdS, cmdS + 1, cmdN * sizeof(char *));
-								cmdS[cmdN] = nullptr;
-							};
-						};
-					};
-				};
-			};
+			delete[] cmdS[1];
+			--cmdN;
+			memmove(cmdS + 1, cmdS + 2, (cmdN - 1) * sizeof(char *));
+			cmdS[cmdN] = nullptr;
 		};
 	};
 
@@ -289,13 +278,15 @@ namespace XYO::System {
 		reset();
 		parse(false, cmdLine);
 
-		cmdS = new char *[cmdN];
+		// one extra slot, cmdS is a null terminated argv
+		cmdS = new char *[cmdN + 1];
 		cmdS[0] = nullptr;
 
 		parse(true, cmdLine);
+		cmdS[cmdN] = nullptr;
 
 		--cmdN;
-		memcpy(cmdS, cmdS + 1, cmdN * sizeof(char *));
+		memmove(cmdS, cmdS + 1, cmdN * sizeof(char *));
 		cmdS[cmdN] = nullptr;
 
 		for (k = 0; k < cmdN; ++k) {

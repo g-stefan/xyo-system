@@ -31,10 +31,43 @@ namespace XYO::System {
 		};
 	};
 
-	bool FileTime::getCreationTime(const char *file) {
-		HANDLE hFile;
-		hFile = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
+	void FileTime::activeDestructor() {
+		if (fileTime) {
+			delete fileTime;
+			fileTime = nullptr;
+		};
+	};
+
+	// No file handle, CreateFile fails on files open for writing (share mode) and on directories.
+	// For a link (reparse point) GetFileAttributesEx gives the time of the link itself, then the time
+	// of what it points to comes from a handle that only reads attributes (CreateFile follows the link).
+	static bool fileTimeGetAttributes_(const char *file, WIN32_FILE_ATTRIBUTE_DATA &data) {
+		if (!GetFileAttributesExA(file, GetFileExInfoStandard, &data)) {
+			return false;
+		};
+		if ((data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
+			return true;
+		};
+		HANDLE hFile = CreateFileA(file, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
 		if (hFile == INVALID_HANDLE_VALUE) {
+			// a link to nothing
+			return false;
+		};
+		BY_HANDLE_FILE_INFORMATION info;
+		BOOL isOk = GetFileInformationByHandle(hFile, &info);
+		CloseHandle(hFile);
+		if (!isOk) {
+			return false;
+		};
+		data.ftCreationTime = info.ftCreationTime;
+		data.ftLastAccessTime = info.ftLastAccessTime;
+		data.ftLastWriteTime = info.ftLastWriteTime;
+		return true;
+	};
+
+	bool FileTime::getCreationTime(const char *file) {
+		WIN32_FILE_ATTRIBUTE_DATA data;
+		if (!fileTimeGetAttributes_(file, data)) {
 			if (fileTime) {
 				delete fileTime;
 				fileTime = nullptr;
@@ -44,19 +77,13 @@ namespace XYO::System {
 		if (!fileTime) {
 			fileTime = new FileTime_();
 		};
-		if (!GetFileTime(hFile, &fileTime->value, nullptr, nullptr)) {
-			delete fileTime;
-			fileTime = nullptr;
-			return false;
-		};
-		CloseHandle(hFile);
+		fileTime->value = data.ftCreationTime;
 		return true;
 	};
 
 	bool FileTime::getLastAccessTime(const char *file) {
-		HANDLE hFile;
-		hFile = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-		if (hFile == INVALID_HANDLE_VALUE) {
+		WIN32_FILE_ATTRIBUTE_DATA data;
+		if (!fileTimeGetAttributes_(file, data)) {
 			if (fileTime) {
 				delete fileTime;
 				fileTime = nullptr;
@@ -66,19 +93,13 @@ namespace XYO::System {
 		if (!fileTime) {
 			fileTime = new FileTime_();
 		};
-		if (!GetFileTime(hFile, nullptr, &fileTime->value, nullptr)) {
-			delete fileTime;
-			fileTime = nullptr;
-			return false;
-		};
-		CloseHandle(hFile);
+		fileTime->value = data.ftLastAccessTime;
 		return true;
 	};
 
 	bool FileTime::getLastWriteTime(const char *file) {
-		HANDLE hFile;
-		hFile = CreateFile(file, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-		if (hFile == INVALID_HANDLE_VALUE) {
+		WIN32_FILE_ATTRIBUTE_DATA data;
+		if (!fileTimeGetAttributes_(file, data)) {
 			if (fileTime) {
 				delete fileTime;
 				fileTime = nullptr;
@@ -88,12 +109,7 @@ namespace XYO::System {
 		if (!fileTime) {
 			fileTime = new FileTime_();
 		};
-		if (!GetFileTime(hFile, nullptr, nullptr, &fileTime->value)) {
-			delete fileTime;
-			fileTime = nullptr;
-			return false;
-		};
-		CloseHandle(hFile);
+		fileTime->value = data.ftLastWriteTime;
 		return true;
 	};
 
@@ -112,21 +128,34 @@ namespace XYO::System {
 		return (int)CompareFileTime(&fileTime->value, &x.fileTime->value);
 	};
 
+	// LOCAL TIME, NOT UTC - by design, do not change, same as DateTime.
+	// The file time is kept in UTC (as Windows gives it, compare works across
+	// time zones and daylight saving changes). toUnixTime / fromUnixTime convert it
+	// to / from the local wall clock counted as if it was UTC, the same values as
+	// DateTime::toUnixTime, so DateTime::fromUnixTime(fileTime.toUnixTime()) is the
+	// local date and time of the file. The daylight saving rule of that date is used.
+
+	// FILETIME is 100 ns intervals since 1601-01-01 UTC
+	static const LONGLONG fileTimeUnixEpoch_ = 116444736000000000LL;
+
 	uint64_t FileTime::toUnixTime() {
 		if (!fileTime) {
 			return (uint64_t)0;
 		};
-		time_t t;
-
-		LONGLONG ll;
-		ll = (((LONGLONG)(fileTime->value.dwHighDateTime)) << 32) + fileTime->value.dwLowDateTime;
-#	ifdef XYO_PLATFORM_COMPILER_MSVC
-		t = (time_t)((ll - (116444736000000000ui64)) / 10000000ui64);
-#	endif
-#	ifdef XYO_PLATFORM_COMPILER_GCC
-		t = (time_t)((ll - (116444736000000000ULL)) / 10000000ULL);
-#	endif
-		return (uint64_t)t;
+		SYSTEMTIME utc;
+		SYSTEMTIME local;
+		FILETIME localAsUTC;
+		if (!FileTimeToSystemTime(&fileTime->value, &utc)) {
+			return (uint64_t)0;
+		};
+		if (!SystemTimeToTzSpecificLocalTime(nullptr, &utc, &local)) {
+			local = utc;
+		};
+		if (!SystemTimeToFileTime(&local, &localAsUTC)) {
+			return (uint64_t)0;
+		};
+		LONGLONG ll = ((static_cast<LONGLONG>(localAsUTC.dwHighDateTime)) << 32) + localAsUTC.dwLowDateTime;
+		return static_cast<uint64_t>((ll - fileTimeUnixEpoch_) / 10000000LL);
 	};
 
 	void FileTime::fromUnixTime(uint64_t t) {
@@ -134,15 +163,23 @@ namespace XYO::System {
 			fileTime = new FileTime_();
 		};
 
-		LONGLONG ll;
-#	ifdef XYO_PLATFORM_COMPILER_MSVC
-		ll = Int32x32To64(t, 10000000UL) + 116444736000000000ui64;
-#	endif
-#	ifdef XYO_PLATFORM_COMPILER_GCC
-		ll = Int32x32To64(t, 10000000UL) + 116444736000000000ULL;
-#	endif
-		fileTime->value.dwLowDateTime = (DWORD)ll;
-		fileTime->value.dwHighDateTime = (DWORD)(ll >> 32);
+		// 64-bit, Int32x32To64 would truncate t to 32 bits (year 2038)
+		LONGLONG ll = static_cast<LONGLONG>(static_cast<int64_t>(t)) * 10000000LL + fileTimeUnixEpoch_;
+		FILETIME localAsUTC;
+		SYSTEMTIME local;
+		SYSTEMTIME utc;
+		localAsUTC.dwLowDateTime = static_cast<DWORD>(ll);
+		localAsUTC.dwHighDateTime = static_cast<DWORD>(ll >> 32);
+		if (!FileTimeToSystemTime(&localAsUTC, &local)) {
+			fileTime->value = localAsUTC;
+			return;
+		};
+		if (!TzSpecificLocalTimeToSystemTime(nullptr, &local, &utc)) {
+			utc = local;
+		};
+		if (!SystemTimeToFileTime(&utc, &fileTime->value)) {
+			fileTime->value = localAsUTC;
+		};
 	};
 
 };

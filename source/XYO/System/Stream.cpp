@@ -16,14 +16,14 @@ namespace XYO::System::Stream {
 		size_t readLn;
 		size_t readX;
 		size_t readTotal;
-		char buffer[32768];
+		char buffer[XYO_SYSTEM_STREAM_BUFFER_SIZE];
 
 		if (size == 0) {
 			return true;
 		};
 
 		readTotal = 0;
-		readX = 32768;
+		readX = XYO_SYSTEM_STREAM_BUFFER_SIZE;
 		if (size < readX) {
 			readX = size;
 		};
@@ -47,49 +47,66 @@ namespace XYO::System::Stream {
 				break;
 			};
 			readX = size - readTotal;
-			if (readX > 32768) {
-				readX = 32768;
+			if (readX > XYO_SYSTEM_STREAM_BUFFER_SIZE) {
+				readX = XYO_SYSTEM_STREAM_BUFFER_SIZE;
 			};
 		};
 
 		return true;
 	};
 
-	bool readLn(IRead &iread, String &out, size_t size) {
-		StringReference *retV = TMemory<StringReference>::newMemory();
-		retV->init();
-		out = retV;
+	// Line source for readLn: one byte at a time, by design, do not buffer.
+	// For streams like sockets and pipes: a read of more bytes can wait a long time for data
+	// that is not sent yet (the line is complete), or take bytes after the line
+	// (an HTTP body after the header lines) that the next reader needs.
+	class StreamByteSource_ {
+		public:
+			IRead &iread;
 
-		size_t readLn;
+			inline StreamByteSource_(IRead &iread_) : iread(iread_){};
+
+			inline bool readByte(char &x) {
+				return (iread.read(&x, 1) > 0);
+			};
+	};
+
+	// The line rules, the same for readLn and LineRead:
+	// ends with "\r\n" or "\n" (kept in the line), a lone '\r' is part of the line,
+	// at most size characters without the line end, false at the end of the stream.
+	template <typename TSource>
+	static bool streamReadLn_(TSource &source, StringReference *retV, size_t size) {
 		size_t readTotal;
 		char buffer;
 
 		readTotal = 0;
-		if (size == 0) {
-			return true;
-		};
 
+		// the character after a lone '\r' is already read, process it next
+		bool hasNext = false;
 		for (;;) {
-			readLn = iread.read(&buffer, 1);
-			if (readLn > 0) {
+			bool isRead;
+			if (hasNext) {
+				hasNext = false;
+				isRead = true;
+			} else {
+				isRead = source.readByte(buffer);
+			};
+			if (isRead) {
 				if (buffer == '\r') {
 					if (readTotal + 1 >= size) {
 						retV->concatenateX('\r');
 						return true;
 					};
 
-					readLn = iread.read(&buffer, 1);
-					if (readLn > 0) {
+					if (source.readByte(buffer)) {
 						if (buffer == '\n') {
 							retV->concatenateX('\r');
 							retV->concatenateX('\n');
 							return true;
 						};
-						retV->concatenateX(buffer);
-						readTotal += 2;
-						if (readTotal >= size) {
-							return true;
-						};
+						// lone '\r', keep it, the next character can start a new "\r\n"
+						retV->concatenateX('\r');
+						readTotal++;
+						hasNext = true;
 						continue;
 					};
 
@@ -121,14 +138,62 @@ namespace XYO::System::Stream {
 		return false;
 	};
 
+	bool readLn(IRead &iread, String &out, size_t size) {
+		StringReference *retV = TMemory<StringReference>::newMemory();
+		retV->init();
+		out = retV;
+
+		if (size == 0) {
+			return true;
+		};
+
+		StreamByteSource_ source(iread);
+		return streamReadLn_(source, retV, size);
+	};
+
+	LineRead::LineRead(IRead &iread, ISeek &iseek) {
+		iread_ = &iread;
+		iseek_ = &iseek;
+		length_ = 0;
+		index_ = 0;
+		position_ = iseek.seekTell();
+		blockSize_ = XYO_SYSTEM_STREAM_BUFFER_SIZE;
+		if (position_ == static_cast<uint64_t>(-1)) {
+			// the position is unknown (a pipe opened as a file), what is read ahead can not be given back
+			blockSize_ = 1;
+		};
+	};
+
+	LineRead::~LineRead(){};
+
+	bool LineRead::readLn(String &out, size_t size) {
+		StringReference *retV = TMemory<StringReference>::newMemory();
+		retV->init();
+		out = retV;
+
+		if (size == 0) {
+			return true;
+		};
+
+		return streamReadLn_(*this, retV, size);
+	};
+
+	void LineRead::close() {
+		if (index_ < length_) {
+			iseek_->seekFromBegin(position_);
+		};
+		length_ = 0;
+		index_ = 0;
+	};
+
 	size_t write(IWrite &iwrite, const String &data) {
 		return iwrite.write(data.value(), data.length());
 	};
 
 	size_t writeLn(IWrite &iwrite, const String &data) {
-		String data_ = data;
-		data_ += "\r\n";
-		return iwrite.write(data_.value(), data_.length());
+		size_t written = iwrite.write(data.value(), data.length());
+		written += iwrite.write("\r\n", 2);
+		return written;
 	};
 
 	size_t readToBuffer(IRead &iread, Buffer &buffer, size_t ln) {

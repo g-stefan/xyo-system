@@ -25,11 +25,17 @@ namespace XYO::System {
 			XYO_SYSTEM_EXPORT FileTime();
 			XYO_SYSTEM_EXPORT ~FileTime();
 
+			// Back to the state of a new FileTime (no time), used by containers to reset a slot
+			XYO_SYSTEM_EXPORT void activeDestructor();
+
 			XYO_SYSTEM_EXPORT bool getCreationTime(const char *file);
 			XYO_SYSTEM_EXPORT bool getLastAccessTime(const char *file);
 			XYO_SYSTEM_EXPORT bool getLastWriteTime(const char *file);
 			XYO_SYSTEM_EXPORT int compare(FileTime &x);
 			XYO_SYSTEM_EXPORT bool isChanged(TDynamicArray<FileTime> &x);
+			// LOCAL TIME, NOT UTC - by design, same values as DateTime::toUnixTime / fromUnixTime:
+			// the local wall clock of the file time counted as if it was UTC, no time zone conversion
+			// needed when used with DateTime. The file time itself is kept in UTC, compare uses it.
 			XYO_SYSTEM_EXPORT uint64_t toUnixTime();
 			XYO_SYSTEM_EXPORT void fromUnixTime(uint64_t);
 	};

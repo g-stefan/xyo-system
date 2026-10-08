@@ -42,7 +42,13 @@ namespace XYO::System {
 		return dateTime->value.wDay;
 	};
 
+	// From the date, the stored day of the week is not updated by the setters
 	uint16_t DateTime::getDayOfWeek() {
+		FILETIME ft;
+		SYSTEMTIME value;
+		if (SystemTimeToFileTime(&dateTime->value, &ft) && FileTimeToSystemTime(&ft, &value)) {
+			return value.wDayOfWeek;
+		};
 		return dateTime->value.wDayOfWeek;
 	};
 
@@ -166,67 +172,45 @@ namespace XYO::System {
 		return 1;
 	};
 
-	static void unixTimeToFileTime_(time_t t, FILETIME &ft) {
-		LONGLONG ll;
-#	ifdef XYO_PLATFORM_COMPILER_MSVC
-		ll = Int32x32To64(t, 10000000UL) + 116444736000000000ui64;
-#	endif
-#	ifdef XYO_PLATFORM_COMPILER_GCC
-		ll = Int32x32To64(t, 10000000UL) + 116444736000000000ULL;
-#	endif
-		ft.dwLowDateTime = (DWORD)ll;
-		ft.dwHighDateTime = (DWORD)(ll >> 32);
+	// FILETIME is 100 ns intervals since 1601-01-01 UTC
+	static const LONGLONG dateTimeUnixEpoch_ = 116444736000000000LL;
+
+	// 64-bit, Int32x32To64 would truncate t to 32 bits (year 2038)
+	static void dateTimeUnixToFileTime_(uint64_t t, FILETIME &ft) {
+		LONGLONG ll = static_cast<LONGLONG>(static_cast<int64_t>(t)) * 10000000LL + dateTimeUnixEpoch_;
+		ft.dwLowDateTime = static_cast<DWORD>(ll);
+		ft.dwHighDateTime = static_cast<DWORD>(ll >> 32);
 	};
 
-	static void fileTimeToUnixTime_(FILETIME &ft, time_t &t) {
-		LONGLONG ll;
-		ll = (((LONGLONG)(ft.dwHighDateTime)) << 32) + ft.dwLowDateTime;
-#	ifdef XYO_PLATFORM_COMPILER_MSVC
-		t = (time_t)((ll - (116444736000000000ui64)) / 10000000ui64);
-#	endif
-#	ifdef XYO_PLATFORM_COMPILER_GCC
-		t = (time_t)((ll - (116444736000000000ULL)) / 10000000ULL);
-#	endif
+	static LONGLONG dateTimeFileTimeSinceUnixEpoch_(const FILETIME &ft) {
+		return ((static_cast<LONGLONG>(ft.dwHighDateTime)) << 32) + ft.dwLowDateTime - dateTimeUnixEpoch_;
 	};
 
-	static void fileTimeToUnixTimeMilliseconds_(FILETIME &ft, time_t &t) {
-		LONGLONG ll;
-		ll = (((LONGLONG)(ft.dwHighDateTime)) << 32) + ft.dwLowDateTime;
-#	ifdef XYO_PLATFORM_COMPILER_MSVC
-		t = (time_t)((ll - (116444736000000000ui64)) / 10000000ui64);
-#	endif
-#	ifdef XYO_PLATFORM_COMPILER_GCC
-		t = (time_t)((ll - (116444736000000000ULL)) / 10000000ULL);
-#	endif
-	};
+	// LOCAL TIME, NOT UTC - by design, do not change.
+	// The unix time values here are the local wall clock counted as if it was UTC,
+	// no time zone conversion in toUnixTime, fromUnixTime or timestampInMilliseconds.
+	// They are stored and converted back and forth: fromUnixTime(toUnixTime())
+	// gives the same local date and time, independent of time zone and daylight saving rules.
 
 	uint64_t DateTime::toUnixTime() {
-		time_t t;
 		FILETIME ft;
 		SystemTimeToFileTime(&dateTime->value, &ft);
-		fileTimeToUnixTime_(ft, t);
-		return (uint64_t)t;
+		return static_cast<uint64_t>(dateTimeFileTimeSinceUnixEpoch_(ft) / 10000000LL);
 	};
 
 	void DateTime::fromUnixTime(uint64_t t) {
 		FILETIME ft;
-		unixTimeToFileTime_(t, ft);
+		dateTimeUnixToFileTime_(t, ft);
 		FileTimeToSystemTime(&ft, &dateTime->value);
 	};
 
+	// Milliseconds of the local wall clock, see LOCAL TIME above
 	uint64_t DateTime::timestampInMilliseconds() {
-		SYSTEMTIME valueTmp_;
-		GetLocalTime(&valueTmp_);
-		time_t t;
+		SYSTEMTIME localTime;
 		FILETIME ft;
-		SystemTimeToFileTime(&valueTmp_, &ft);
-		fileTimeToUnixTime_(ft, t);
-#	ifdef XYO_PLATFORM_COMPILER_MSVC
-		return ((uint64_t)t) * (1000ui64) + ((uint64_t)valueTmp_.wMilliseconds);
-#	endif
-#	ifdef XYO_PLATFORM_COMPILER_GCC
-		return ((uint64_t)t) * (1000ULL) + ((uint64_t)valueTmp_.wMilliseconds);
-#	endif
+		GetLocalTime(&localTime);
+		SystemTimeToFileTime(&localTime, &ft);
+		return static_cast<uint64_t>(dateTimeFileTimeSinceUnixEpoch_(ft) / 10000LL);
 	};
 
 };

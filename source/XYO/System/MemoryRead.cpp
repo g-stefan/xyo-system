@@ -28,54 +28,44 @@ namespace XYO::System {
 	};
 
 	size_t MemoryRead::read(void *output, size_t ln) {
-		size_t npos;
-		size_t nlen;
-		npos = pos_ + ln;
-		if (npos > size_) {
-			npos = size_;
+		// compare with what is left, pos_ + ln can overflow for a large ln
+		size_t available = size_ - pos_;
+		if (ln > available) {
+			ln = available;
 		};
-		nlen = npos - pos_;
-		if (nlen == 0) {
+		if (ln == 0) {
 			return 0;
 		};
-		memcpy(output, &(reinterpret_cast<const uint8_t *>(data_))[pos_], nlen);
-		pos_ = npos;
-		return nlen;
+		memcpy(output, &(reinterpret_cast<const uint8_t *>(data_))[pos_], ln);
+		pos_ += ln;
+		return ln;
 	};
 
 	bool MemoryRead::seekFromBegin(uint64_t x) {
-		pos_ = x;
-		if (pos_ < 0) {
-			pos_ = 0;
-			return false;
-		} else if (pos_ > size_) {
+		if (x > size_) {
 			pos_ = size_;
 			return false;
 		};
+		pos_ = static_cast<size_t>(x);
 		return true;
 	};
 
 	bool MemoryRead::seek(uint64_t x) {
-		pos_ += x;
-		if (pos_ < 0) {
-			pos_ = 0;
-			return false;
-		} else if (pos_ > size_) {
+		uint64_t npos = static_cast<uint64_t>(pos_) + x;
+		if (npos > size_) {
 			pos_ = size_;
 			return false;
 		};
+		pos_ = static_cast<size_t>(npos);
 		return true;
 	};
 
 	bool MemoryRead::seekFromEnd(uint64_t x) {
-		pos_ = size_ - x;
-		if (pos_ < 0) {
-			pos_ = 0;
-			return false;
-		} else if (pos_ > size_) {
-			pos_ = size_;
+		// before the begin: fail and keep the position, like File
+		if (x > size_) {
 			return false;
 		};
+		pos_ = size_ - static_cast<size_t>(x);
 		return true;
 	};
 

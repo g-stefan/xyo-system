@@ -46,8 +46,18 @@ namespace XYO::System::Shell {
 		return (::rename(source, destination) == 0);
 	};
 
+	// A file, or a link (a link to a directory too: junction, directory symbolic link).
+	// Removing a link removes the link, not what it points to.
 	bool remove(const char *file) {
-		return (::remove(file) == 0);
+		if (::remove(file) == 0) {
+			return true;
+		};
+		// ::remove (DeleteFile) can not remove a link to a directory, RemoveDirectory removes the link itself
+		DWORD attributes = GetFileAttributesA(file);
+		if (attributes != INVALID_FILE_ATTRIBUTES && (attributes & FILE_ATTRIBUTE_REPARSE_POINT) && (attributes & FILE_ATTRIBUTE_DIRECTORY)) {
+			return (RemoveDirectoryA(file) != 0);
+		};
+		return false;
 	};
 
 	bool isReadOnly(const char *fileOrFolder) {
@@ -74,75 +84,117 @@ namespace XYO::System::Shell {
 		return true;
 	};
 
-	int compareLastWriteTime(const char *fileA, const char *fileB) {
-		HANDLE hFileA, hFileB;
-		FILETIME lastWriteTimeA, lastWriteTimeB;
-
-		hFileA = CreateFile(fileA, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-		hFileB = CreateFile(fileB, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-		if (hFileA == INVALID_HANDLE_VALUE) {
-			if (hFileB == INVALID_HANDLE_VALUE) {
-				return 0;
-			} else {
-				CloseHandle(hFileB);
-				return -1;
-			};
-		} else {
-			if (hFileB == INVALID_HANDLE_VALUE) {
-				CloseHandle(hFileA);
-				return 1;
-			};
+	// Times, size, attributes of what path is: GetFileAttributesEx, no file handle (a handle opened for reading
+	// fails on files open for writing, share mode). For a link (reparse point) GetFileAttributesEx gives the data
+	// of the link itself (a symbolic link to a file has its own time), then the data of what it points to comes
+	// from a handle that only reads attributes (CreateFile follows the link, share all, no cloud file download).
+	static bool shellFileData_(const char *path, WIN32_FILE_ATTRIBUTE_DATA &data) {
+		if (!GetFileAttributesExA(path, GetFileExInfoStandard, &data)) {
+			return false;
 		};
-		GetFileTime(hFileA, nullptr, nullptr, &lastWriteTimeA);
-		GetFileTime(hFileB, nullptr, nullptr, &lastWriteTimeB);
-		CloseHandle(hFileA);
-		CloseHandle(hFileB);
-
-		return (int)CompareFileTime(&lastWriteTimeA, &lastWriteTimeB);
+		if ((data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
+			return true;
+		};
+		HANDLE hFile = CreateFileA(path, FILE_READ_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+		if (hFile == INVALID_HANDLE_VALUE) {
+			// a link to nothing
+			return false;
+		};
+		BY_HANDLE_FILE_INFORMATION info;
+		BOOL isOk = GetFileInformationByHandle(hFile, &info);
+		CloseHandle(hFile);
+		if (!isOk) {
+			return false;
+		};
+		data.dwFileAttributes = info.dwFileAttributes;
+		data.ftCreationTime = info.ftCreationTime;
+		data.ftLastAccessTime = info.ftLastAccessTime;
+		data.ftLastWriteTime = info.ftLastWriteTime;
+		data.nFileSizeHigh = info.nFileSizeHigh;
+		data.nFileSizeLow = info.nFileSizeLow;
+		return true;
 	};
+
+	// The time of what the files are (a link: what it points to)
+	int compareLastWriteTime(const char *fileA, const char *fileB) {
+		WIN32_FILE_ATTRIBUTE_DATA dataA;
+		WIN32_FILE_ATTRIBUTE_DATA dataB;
+		bool isA = shellFileData_(fileA, dataA);
+		bool isB = shellFileData_(fileB, dataB);
+
+		if (!isA) {
+			return isB ? -1 : 0;
+		};
+		if (!isB) {
+			return 1;
+		};
+		return (int)CompareFileTime(&dataA.ftLastWriteTime, &dataB.ftLastWriteTime);
+	};
+
+	// Exit code when the process can not be started, like a shell for a command not found
+	static const uint32_t shellExecuteFailed_ = 127;
 
 	int system(const char *cmd) {
 		return ::system(cmd);
 	};
 
+	// Set the access and modification time to now, create the file if missing.
+	// Never truncates, sets the time of an empty file or a directory too.
 	bool touch(const char *file) {
-		FILE *in;
-		char ch;
+		HANDLE hFile;
+		FILETIME now;
+		BOOL retV;
 
-		in = fopen(file, "rb+");
-		if (in != nullptr) {
-			if (fread(&ch, 1, 1, in) == 1) {
-				fseek(in, 0, SEEK_SET);
-				fwrite(&ch, 1, 1, in);
-			};
-			fclose(in);
-			return true;
-		} else {
-			in = fopen(file, "wb+");
-			if (in != nullptr) {
-				fclose(in);
-				return true;
-			};
+		hFile = CreateFileA(file, FILE_WRITE_ATTRIBUTES, FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr, OPEN_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+		if (hFile == INVALID_HANDLE_VALUE) {
+			return false;
 		};
-		return false;
+		GetSystemTimeAsFileTime(&now);
+		retV = SetFileTime(hFile, nullptr, &now, &now);
+		CloseHandle(hFile);
+		return (retV != 0);
+	};
+
+	enum {
+		ShellEntryNone_ = 0,
+		ShellEntryFile_ = 1,
+		ShellEntryDirectory_ = 2
+	};
+
+	// What is at path: none (also a device like NUL, CON), a file or a directory.
+	// One attribute query without opening a handle (access + _stat64 did two, _stat64 opens the file).
+	// GetFileAttributesEx fails for device names, the same result as _stat64 (not a file).
+	// A symbolic link or junction is followed, like _stat64: a dangling link is none.
+	static int shellEntryType_(const char *path) {
+		WIN32_FILE_ATTRIBUTE_DATA data;
+		if (!GetFileAttributesExA(path, GetFileExInfoStandard, &data)) {
+			return ShellEntryNone_;
+		};
+		if (data.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) {
+			struct __stat64 status;
+			if (_stat64(path, &status) != 0) {
+				return ShellEntryNone_;
+			};
+			if ((status.st_mode & _S_IFMT) == _S_IFDIR) {
+				return ShellEntryDirectory_;
+			};
+			if ((status.st_mode & _S_IFMT) == _S_IFREG) {
+				return ShellEntryFile_;
+			};
+			return ShellEntryNone_;
+		};
+		if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+			return ShellEntryDirectory_;
+		};
+		return ShellEntryFile_;
 	};
 
 	bool fileExists(const char *file) {
-		struct __stat64 status;
-		int result;
-		if (access(file, 0) == 0) {
-			if (_stat64(file, &status) == 0) {
-				if (status.st_mode & S_IFREG) {
-					return true;
-				};
-			};
-		};
-		return false;
+		return (shellEntryType_(file) == ShellEntryFile_);
 	};
 
 	bool directoryExists(const char *directory) {
 		size_t ln;
-		struct __stat64 status;
 		char buf[8];
 		const char *dir;
 
@@ -163,15 +215,7 @@ namespace XYO::System::Shell {
 					dir = buf;
 				};
 			};
-			//
-			if (access(dir, 0) == 0) {
-				if (_stat64(dir, &status) == 0) {
-					if (status.st_mode & S_IFDIR) {
-						return true;
-					};
-				};
-			};
-			//
+			return (shellEntryType_(dir) == ShellEntryDirectory_);
 		};
 		return false;
 	};
@@ -193,87 +237,94 @@ namespace XYO::System::Shell {
 		return true;
 	};
 
-	uint32_t execute(const char *cmd) {
-		DWORD ReturnValue;
-		STARTUPINFO SInfo;
-		PROCESS_INFORMATION PInfo;
-		BOOL IsOk;
+	// Start a process, the caller closes the handles from pInfo
+	static bool shellCreateProcess_(const char *cmd, WORD showWindow, PROCESS_INFORMATION &pInfo) {
+		STARTUPINFOA sInfo;
 
-		ReturnValue = 0;
+		memset(&sInfo, 0, sizeof(sInfo));
+		memset(&pInfo, 0, sizeof(pInfo));
 
-		memset(&SInfo, 0, sizeof(SInfo));
-		memset(&PInfo, 0, sizeof(PInfo));
+		sInfo.cb = sizeof(sInfo);
+		sInfo.dwFlags = STARTF_USESHOWWINDOW;
+		sInfo.wShowWindow = showWindow;
 
-		SInfo.cb = sizeof(SInfo);
-		SInfo.dwFlags = STARTF_USESHOWWINDOW;
-		SInfo.wShowWindow = SW_SHOW;
-
-		IsOk = CreateProcessA(
-		    nullptr,
-		    (LPSTR)cmd,
-		    nullptr,
-		    nullptr,
-		    FALSE,
-		    0,
-		    nullptr,
-		    nullptr,
-		    &SInfo,
-		    &PInfo);
-
-		if (IsOk) {
-			WaitForSingleObject(PInfo.hProcess, INFINITE);
-			GetExitCodeProcess(PInfo.hProcess, &ReturnValue);
-			CloseHandle(PInfo.hThread);
-			CloseHandle(PInfo.hProcess);
-		};
-
-		return ReturnValue;
+		return (CreateProcessA(
+		            nullptr,
+		            (LPSTR)cmd,
+		            nullptr,
+		            nullptr,
+		            FALSE,
+		            0,
+		            nullptr,
+		            nullptr,
+		            &sInfo,
+		            &pInfo) != 0);
 	};
 
+	// Wait for the process, returns its exit code
+	static uint32_t shellWaitProcess_(PROCESS_INFORMATION &pInfo) {
+		DWORD returnValue;
+		WaitForSingleObject(pInfo.hProcess, INFINITE);
+		if (!GetExitCodeProcess(pInfo.hProcess, &returnValue)) {
+			returnValue = shellExecuteFailed_;
+		};
+		CloseHandle(pInfo.hThread);
+		CloseHandle(pInfo.hProcess);
+		return returnValue;
+	};
+
+	uint32_t execute(const char *cmd) {
+		PROCESS_INFORMATION pInfo;
+		if (!shellCreateProcess_(cmd, SW_SHOW, pInfo)) {
+			return shellExecuteFailed_;
+		};
+		return shellWaitProcess_(pInfo);
+	};
+
+	uint32_t executeHidden(const char *cmd) {
+		PROCESS_INFORMATION pInfo;
+		if (!shellCreateProcess_(cmd, SW_HIDE, pInfo)) {
+			return shellExecuteFailed_;
+		};
+		return shellWaitProcess_(pInfo);
+	};
+
+	// The output file is the standard output and error of the process, no pipe to copy from
 	uint32_t executeWriteOutputToFile(const char *cmd, const char *out) {
-		DWORD ReturnValue;
-		SECURITY_ATTRIBUTES SecAttr;
-		STARTUPINFO SInfo;
-		PROCESS_INFORMATION PInfo;
-		BOOL IsOk;
-		HANDLE hWrite2Std = nullptr;
-		HANDLE hRead2Std = nullptr;
-		HANDLE hWriteProc = nullptr;
-		HANDLE hReadProc = nullptr;
+		SECURITY_ATTRIBUTES secAttr;
+		STARTUPINFOA sInfo;
+		PROCESS_INFORMATION pInfo;
+		HANDLE hOut;
+		HANDLE hIn;
+		BOOL isOk;
 
-		HANDLE h_out = nullptr;
+		memset(&secAttr, 0, sizeof(secAttr));
+		secAttr.nLength = sizeof(secAttr);
+		secAttr.bInheritHandle = TRUE;
+		secAttr.lpSecurityDescriptor = nullptr;
 
-		BYTE buffer[32768];
-		DWORD buffer_ln;
-		DWORD total_buffer_ln;
-
-		ReturnValue = 0;
-
-		h_out = CreateFile((LPSTR)out, CREATE_ALWAYS, FILE_SHARE_READ, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
-		if (h_out == INVALID_HANDLE_VALUE) {
-			return 0;
+		hOut = CreateFileA(out, GENERIC_WRITE, FILE_SHARE_READ, &secAttr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL | FILE_FLAG_SEQUENTIAL_SCAN, nullptr);
+		if (hOut == INVALID_HANDLE_VALUE) {
+			return shellExecuteFailed_;
+		};
+		// empty input, the process must not wait for it
+		hIn = CreateFileA("NUL", GENERIC_READ, FILE_SHARE_READ | FILE_SHARE_WRITE, &secAttr, OPEN_EXISTING, 0, nullptr);
+		if (hIn == INVALID_HANDLE_VALUE) {
+			CloseHandle(hOut);
+			return shellExecuteFailed_;
 		};
 
-		memset(&SInfo, 0, sizeof(SInfo));
-		memset(&PInfo, 0, sizeof(PInfo));
-		memset(&SecAttr, 0, sizeof(SecAttr));
+		memset(&sInfo, 0, sizeof(sInfo));
+		memset(&pInfo, 0, sizeof(pInfo));
 
-		SInfo.cb = sizeof(SInfo);
-		SInfo.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
-		SInfo.wShowWindow = SW_SHOW;
+		sInfo.cb = sizeof(sInfo);
+		sInfo.dwFlags = STARTF_USESHOWWINDOW | STARTF_USESTDHANDLES;
+		sInfo.wShowWindow = SW_SHOW;
+		sInfo.hStdInput = hIn;
+		sInfo.hStdOutput = hOut;
+		sInfo.hStdError = hOut;
 
-		SecAttr.nLength = sizeof(SecAttr);
-		SecAttr.bInheritHandle = TRUE;
-		SecAttr.lpSecurityDescriptor = nullptr;
-
-		CreatePipe(&hReadProc, &hWrite2Std, &SecAttr, 32768);
-		CreatePipe(&hRead2Std, &hWriteProc, &SecAttr, 32768);
-
-		SInfo.hStdInput = hRead2Std;
-		SInfo.hStdOutput = hWrite2Std;
-		SInfo.hStdError = hWrite2Std;
-
-		IsOk = CreateProcessA(
+		isOk = CreateProcessA(
 		    nullptr,
 		    (LPSTR)cmd,
 		    nullptr,
@@ -282,160 +333,90 @@ namespace XYO::System::Shell {
 		    0,
 		    nullptr,
 		    nullptr,
-		    &SInfo,
-		    &PInfo);
+		    &sInfo,
+		    &pInfo);
 
-		if (IsOk) {
+		// the process has its own copies
+		CloseHandle(hIn);
+		CloseHandle(hOut);
 
-			for (;;) {
-				if (PeekNamedPipe(hReadProc, nullptr, 0, nullptr, &total_buffer_ln, nullptr)) {
-					if (total_buffer_ln > 0) {
-						while (total_buffer_ln > 32768) {
-							buffer_ln = 32768;
-							if (ReadFile(hReadProc, buffer, buffer_ln, &buffer_ln, nullptr)) {
-								WriteFile(h_out, buffer, buffer_ln, &buffer_ln, nullptr);
-							};
-							total_buffer_ln -= 32768;
-						};
-						if (total_buffer_ln > 0) {
-							buffer_ln = total_buffer_ln;
-							if (ReadFile(hReadProc, buffer, buffer_ln, &buffer_ln, nullptr)) {
-								WriteFile(h_out, buffer, buffer_ln, &buffer_ln, nullptr);
-							};
-						};
-					} else {
-						// test end of process
-						if (WAIT_TIMEOUT != WaitForSingleObject(PInfo.hProcess, 1)) {
-
-							if (PeekNamedPipe(hReadProc, nullptr, 0, nullptr, &total_buffer_ln, nullptr)) {
-
-								while (total_buffer_ln > 32768) {
-									buffer_ln = 32768;
-									if (ReadFile(hReadProc, buffer, buffer_ln, &buffer_ln, nullptr)) {
-										WriteFile(h_out, buffer, buffer_ln, &buffer_ln, nullptr);
-									};
-									total_buffer_ln -= 32768;
-								};
-								if (total_buffer_ln > 0) {
-									buffer_ln = total_buffer_ln;
-									if (ReadFile(hReadProc, buffer, buffer_ln, &buffer_ln, nullptr)) {
-										WriteFile(h_out, buffer, buffer_ln, &buffer_ln, nullptr);
-									};
-								};
-							};
-
-							break;
-						};
-					};
-				} else if (WAIT_OBJECT_0 == WaitForSingleObject(PInfo.hThread, 1)) {
-					break;
-				}
-			};
-
-			GetExitCodeProcess(PInfo.hProcess, &ReturnValue);
-			CloseHandle(PInfo.hThread);
-			CloseHandle(PInfo.hProcess);
-
-			CloseHandle(hWriteProc);
-			CloseHandle(hRead2Std);
-
-			CloseHandle(hWrite2Std);
-			CloseHandle(hReadProc);
-			CloseHandle(h_out);
+		if (!isOk) {
+			return shellExecuteFailed_;
 		};
-
-		return ReturnValue;
+		return shellWaitProcess_(pInfo);
 	};
 
-	uint32_t executeHidden(const char *cmd) {
-		DWORD ReturnValue;
-		STARTUPINFO SInfo;
-		PROCESS_INFORMATION PInfo;
-		BOOL IsOk;
+	// Handles of the processes started by executeNoWait. Kept open until the process is known
+	// to be terminated, so its id is not reused by another process (like a zombie on Linux).
+	struct ShellProcessTable_ {
+			SRWLOCK lock;
+			DWORD *processId;
+			HANDLE *process;
+			size_t length;
+			size_t size;
+	};
 
-		ReturnValue = 0;
+	static ShellProcessTable_ shellProcessTable_ = {SRWLOCK_INIT, nullptr, nullptr, 0, 0};
 
-		memset(&SInfo, 0, sizeof(SInfo));
-		memset(&PInfo, 0, sizeof(PInfo));
-
-		SInfo.cb = sizeof(SInfo);
-		SInfo.dwFlags = STARTF_USESHOWWINDOW;
-		SInfo.wShowWindow = SW_HIDE;
-
-		IsOk = CreateProcessA(
-		    nullptr,
-		    (LPSTR)cmd,
-		    nullptr,
-		    nullptr,
-		    FALSE,
-		    0,
-		    nullptr,
-		    nullptr,
-		    &SInfo,
-		    &PInfo);
-		if (IsOk) {
-			WaitForSingleObject(PInfo.hProcess, INFINITE);
-			GetExitCodeProcess(PInfo.hProcess, &ReturnValue);
-			CloseHandle(PInfo.hThread);
-			CloseHandle(PInfo.hProcess);
+	static void shellProcessTableAdd_(DWORD processId, HANDLE hProcess) {
+		AcquireSRWLockExclusive(&shellProcessTable_.lock);
+		if (shellProcessTable_.length == shellProcessTable_.size) {
+			size_t newSize = shellProcessTable_.size ? shellProcessTable_.size * 2 : 16;
+			DWORD *newProcessId = static_cast<DWORD *>(realloc(shellProcessTable_.processId, newSize * sizeof(DWORD)));
+			if (newProcessId != nullptr) {
+				shellProcessTable_.processId = newProcessId;
+			};
+			HANDLE *newProcess = static_cast<HANDLE *>(realloc(shellProcessTable_.process, newSize * sizeof(HANDLE)));
+			if (newProcess != nullptr) {
+				shellProcessTable_.process = newProcess;
+			};
+			if (newProcessId == nullptr || newProcess == nullptr) {
+				// no memory, the id is not protected, same as without the table
+				ReleaseSRWLockExclusive(&shellProcessTable_.lock);
+				CloseHandle(hProcess);
+				return;
+			};
+			shellProcessTable_.size = newSize;
 		};
-		return ReturnValue;
+		shellProcessTable_.processId[shellProcessTable_.length] = processId;
+		shellProcessTable_.process[shellProcessTable_.length] = hProcess;
+		++shellProcessTable_.length;
+		ReleaseSRWLockExclusive(&shellProcessTable_.lock);
+	};
+
+	// Remove the process from the table, the caller owns the handle, nullptr if not found
+	static HANDLE shellProcessTableTake_(DWORD processId) {
+		HANDLE hProcess = nullptr;
+		AcquireSRWLockExclusive(&shellProcessTable_.lock);
+		for (size_t k = 0; k < shellProcessTable_.length; ++k) {
+			if (shellProcessTable_.processId[k] == processId) {
+				hProcess = shellProcessTable_.process[k];
+				--shellProcessTable_.length;
+				shellProcessTable_.processId[k] = shellProcessTable_.processId[shellProcessTable_.length];
+				shellProcessTable_.process[k] = shellProcessTable_.process[shellProcessTable_.length];
+				break;
+			};
+		};
+		ReleaseSRWLockExclusive(&shellProcessTable_.lock);
+		return hProcess;
+	};
+
+	static ProcessId shellExecuteNoWait_(const char *cmd, WORD showWindow) {
+		PROCESS_INFORMATION pInfo;
+		if (!shellCreateProcess_(cmd, showWindow, pInfo)) {
+			return 0;
+		};
+		CloseHandle(pInfo.hThread);
+		shellProcessTableAdd_(pInfo.dwProcessId, pInfo.hProcess);
+		return pInfo.dwProcessId;
 	};
 
 	ProcessId executeNoWait(const char *cmd) {
-		STARTUPINFO SInfo;
-		PROCESS_INFORMATION PInfo;
-
-		memset(&SInfo, 0, sizeof(SInfo));
-		memset(&PInfo, 0, sizeof(PInfo));
-		SInfo.cb = sizeof(SInfo);
-		SInfo.dwFlags = STARTF_USESHOWWINDOW;
-		SInfo.wShowWindow = SW_SHOW;
-
-#	pragma warning(suppress : 6335)
-		if (CreateProcessA(
-		        nullptr,
-		        (LPSTR)cmd,
-		        nullptr,
-		        nullptr,
-		        FALSE,
-		        0,
-		        nullptr,
-		        nullptr,
-		        &SInfo,
-		        &PInfo)) {
-			return PInfo.dwProcessId;
-		};
-
-		return 0;
+		return shellExecuteNoWait_(cmd, SW_SHOW);
 	};
 
 	ProcessId executeHiddenNoWait(const char *cmd) {
-		STARTUPINFO SInfo;
-		PROCESS_INFORMATION PInfo;
-		BOOL IsOk;
-
-		memset(&SInfo, 0, sizeof(SInfo));
-		memset(&PInfo, 0, sizeof(PInfo));
-		SInfo.cb = sizeof(SInfo);
-		SInfo.dwFlags = STARTF_USESHOWWINDOW;
-		SInfo.wShowWindow = SW_HIDE;
-
-#	pragma warning(suppress : 6335)
-		if (CreateProcessA(
-		        nullptr,
-		        (LPSTR)cmd,
-		        nullptr,
-		        nullptr,
-		        FALSE,
-		        0,
-		        nullptr,
-		        nullptr,
-		        &SInfo,
-		        &PInfo)) {
-			return PInfo.dwProcessId;
-		};
-		return 0;
+		return shellExecuteNoWait_(cmd, SW_HIDE);
 	};
 
 	bool isProcessTerminated(const ProcessId processId) {
@@ -444,6 +425,17 @@ namespace XYO::System::Shell {
 		DWORD dwExitCode;
 
 		dwProcessId = (DWORD)processId;
+
+		hProcess = shellProcessTableTake_(dwProcessId);
+		if (hProcess != nullptr) {
+			if (WaitForSingleObject(hProcess, 0) == WAIT_TIMEOUT) {
+				shellProcessTableAdd_(dwProcessId, hProcess);
+				return false;
+			};
+			CloseHandle(hProcess);
+			return true;
+		};
+
 		hProcess = OpenProcess(PROCESS_QUERY_INFORMATION | SYNCHRONIZE, FALSE, dwProcessId);
 		if (hProcess != nullptr) {
 			dwExitCode = 0;
@@ -480,26 +472,28 @@ namespace XYO::System::Shell {
 
 		DWORD dwProcessId;
 		HANDLE hProcess;
-		DWORD dwExitCode;
 
 		dwProcessId = (DWORD)processId;
-		hProcess = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE,
-		                       dwProcessId);
-		if (hProcess) {
-			EnumWindows((WNDENUMPROC)shellTerminateAppEnum__, (LPARAM)dwProcessId);
-
-			if (waitMilliseconds_ == 0) {
-				TerminateProcess(hProcess, 0);
-			} else {
-				if (WaitForSingleObject(hProcess, waitMilliseconds_) != WAIT_OBJECT_0) {
-					TerminateProcess(hProcess, 0);
-				};
-			};
-
-			CloseHandle(hProcess);
+		// the handle from executeNoWait is the started process, not another one with the same id
+		hProcess = shellProcessTableTake_(dwProcessId);
+		if (hProcess == nullptr) {
+			hProcess = OpenProcess(SYNCHRONIZE | PROCESS_TERMINATE, FALSE, dwProcessId);
+		};
+		if (!hProcess) {
+			// true if there is no such process (not running), false if it can not be opened (access denied)
+			return (GetLastError() == ERROR_INVALID_PARAMETER);
 		};
 
-		return true;
+		EnumWindows((WNDENUMPROC)shellTerminateAppEnum__, (LPARAM)dwProcessId);
+
+		bool retV = true;
+		if (waitMilliseconds_ == 0 || WaitForSingleObject(hProcess, waitMilliseconds_) != WAIT_OBJECT_0) {
+			// TerminateProcess fails if the process ended in the meantime, that is a success too
+			retV = (TerminateProcess(hProcess, 0) != 0) || (WaitForSingleObject(hProcess, 0) == WAIT_OBJECT_0);
+		};
+
+		CloseHandle(hProcess);
+		return retV;
 	};
 
 	const char *pathSeparator = "\\";
@@ -510,18 +504,14 @@ namespace XYO::System::Shell {
 	};
 
 	bool getFileSize(const char *fileName, int64_t &size) {
-		HANDLE hFile;
-		hFile = CreateFile(fileName, GENERIC_READ, FILE_SHARE_READ, nullptr, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, nullptr);
-		if (hFile == INVALID_HANDLE_VALUE) {
+		WIN32_FILE_ATTRIBUTE_DATA data;
+		if (!shellFileData_(fileName, data)) {
 			return false;
 		};
-		LARGE_INTEGER fileSize;
-		if (!GetFileSizeEx(hFile, &fileSize)) {
-			CloseHandle(hFile);
+		if (data.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
 			return false;
 		};
-		CloseHandle(hFile);
-		size = fileSize.QuadPart;
+		size = (static_cast<int64_t>(data.nFileSizeHigh) << 32) | data.nFileSizeLow;
 		return true;
 	};
 

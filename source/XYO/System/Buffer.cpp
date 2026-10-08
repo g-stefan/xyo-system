@@ -38,6 +38,25 @@ namespace XYO::System {
 		buffer = newBuffer;
 	};
 
+	void Buffer::resize_(size_t sz) {
+		if (size == sz) {
+			return;
+		};
+		// allocate first, if new throws the buffer is still valid
+		uint8_t *newBuffer = new uint8_t[sz];
+		delete[] buffer; // delete[] nullptr is a no-op
+		buffer = newBuffer;
+		size = sz;
+		if (length > size) {
+			length = size;
+		};
+	};
+
+	void Buffer::allocate(size_t sz) {
+		resize_(sz);
+		length = 0;
+	};
+
 	void Buffer::activeDestructor() {
 		if (buffer != nullptr) {
 			delete[] buffer;
@@ -52,7 +71,7 @@ namespace XYO::System {
 	};
 
 	void Buffer::set(const uint8_t *buf_, size_t size_) {
-		setSize(size_);
+		resize_(size_);
 		memcpy(buffer, buf_, size_);
 		length = size_;
 	};
@@ -70,7 +89,7 @@ namespace XYO::System {
 	};
 
 	void Buffer::fromString(const String &str_) {
-		setSize(str_.length());
+		resize_(str_.length());
 		length = size;
 		memcpy(buffer, str_.value(), length);
 	};
@@ -81,7 +100,8 @@ namespace XYO::System {
 			length = 0;
 			return;
 		};
-		setSize(ln);
+		// all the bytes are written below, the old content is not needed
+		resize_(ln);
 		length = ln;
 
 		size_t m;
@@ -171,7 +191,7 @@ namespace XYO::System {
 	};
 
 	void Buffer::copy(const Buffer &value_) {
-		setSize(value_.size);
+		resize_(value_.size);
 		memcpy(buffer, value_.buffer, value_.length);
 		length = value_.length;
 	};

@@ -19,13 +19,16 @@ namespace XYO::System {
 	class DateTime_ {
 		public:
 			struct tm value;
+			// struct tm has no milliseconds, SYSTEMTIME on Windows has
+			int milliseconds;
 	};
 
 	DateTime::DateTime() {
-		time_t valuex;
+		struct timeval now;
 		dateTime = new DateTime_();
-		valuex = time(nullptr);
-		localtime_r(&valuex, &dateTime->value);
+		gettimeofday(&now, nullptr);
+		localtime_r(&now.tv_sec, &dateTime->value);
+		dateTime->milliseconds = static_cast<int>(now.tv_usec / 1000);
 	};
 
 	DateTime::~DateTime() {
@@ -44,8 +47,14 @@ namespace XYO::System {
 		return dateTime->value.tm_mday;
 	};
 
+	// From the date, the stored day of the week is not updated by the setters
 	uint16_t DateTime::getDayOfWeek() {
-		return dateTime->value.tm_wday;
+		struct tm value = dateTime->value;
+		// timegm normalizes the fields and sets tm_wday
+		if (timegm(&value) == static_cast<time_t>(-1)) {
+			return dateTime->value.tm_wday;
+		};
+		return value.tm_wday;
 	};
 
 	uint16_t DateTime::getHour() {
@@ -61,17 +70,32 @@ namespace XYO::System {
 	};
 
 	uint16_t DateTime::getMilliseconds() {
-		return 0;
+		return static_cast<uint16_t>(dateTime->milliseconds);
 	};
 
-	void DateTime::setLocalTime(){};
+	// Sets the system clock to this local date and time, like SetLocalTime on Windows.
+	// Needs root (CAP_SYS_TIME), as SetLocalTime needs the privilege, else nothing changes.
+	void DateTime::setLocalTime() {
+		struct tm local = dateTime->value;
+		// let mktime find if daylight saving applies at that date
+		local.tm_isdst = -1;
+		time_t utc = mktime(&local);
+		if (utc == static_cast<time_t>(-1)) {
+			return;
+		};
+		struct timespec value;
+		value.tv_sec = utc;
+		value.tv_nsec = static_cast<long>(dateTime->milliseconds) * 1000000L;
+		clock_settime(CLOCK_REALTIME, &value);
+	};
 
 	void DateTime::setYear(uint16_t value) {
-		dateTime->value.tm_year = value;
+		// same values as getYear/getMonth return
+		dateTime->value.tm_year = static_cast<int>(value) - 1900;
 	};
 
 	void DateTime::setMonth(uint16_t value) {
-		dateTime->value.tm_mon = value;
+		dateTime->value.tm_mon = static_cast<int>(value) - 1;
 	};
 
 	void DateTime::setDay(uint16_t value) {
@@ -94,35 +118,62 @@ namespace XYO::System {
 		dateTime->value.tm_sec = value;
 	};
 
-	void DateTime::setMilliseconds(uint16_t value){};
+	void DateTime::setMilliseconds(uint16_t value) {
+		dateTime->milliseconds = value;
+	};
 
 	void DateTime::copy(DateTime &in) {
 		memcpy(&dateTime->value, &in.dateTime->value, sizeof(struct tm));
+		dateTime->milliseconds = in.dateTime->milliseconds;
+	};
+
+	// LOCAL TIME, NOT UTC - by design, do not change, same as on Windows.
+	// The unix time values here are the local wall clock counted as if it was UTC,
+	// no time zone conversion: timegm / gmtime_r on the local date and time fields,
+	// not mktime / localtime_r. They are stored and converted back and forth:
+	// fromUnixTime(toUnixTime()) gives the same local date and time, and the same
+	// values as on Windows, independent of time zone and daylight saving rules.
+
+	// Local date and time fields to seconds, counted as if they were UTC
+	static time_t dateTimeToSeconds_(const struct tm &value) {
+		struct tm tmp = value;
+		return timegm(&tmp);
+	};
+
+	// plus, minus and compare use milliseconds since 1601-01-01, the FILETIME origin used on Windows,
+	// so the results are the same on both: a duration is a date after 1601-01-01,
+	// minus(10:30:15.250, 08:00:00.000) is 1601-01-01 02:30:15.250 and plus adds it back.
+
+	// seconds from 1601-01-01 to 1970-01-01
+	static const int64_t dateTimeEpoch1601_ = 11644473600LL;
+
+	static int64_t dateTimeToMilliseconds1601_(const DateTime_ &value) {
+		return (static_cast<int64_t>(dateTimeToSeconds_(value.value)) + dateTimeEpoch1601_) * 1000LL + value.milliseconds;
+	};
+
+	static void dateTimeFromMilliseconds1601_(DateTime_ &value, int64_t milliseconds) {
+		int64_t seconds = milliseconds / 1000LL;
+		int64_t remainder = milliseconds % 1000LL;
+		if (remainder < 0) {
+			remainder += 1000LL;
+			--seconds;
+		};
+		time_t x = static_cast<time_t>(seconds - dateTimeEpoch1601_);
+		gmtime_r(&x, &value.value);
+		value.milliseconds = static_cast<int>(remainder);
 	};
 
 	void DateTime::plus(DateTime &in) {
-		time_t a;
-		time_t b;
-		a = mktime(&dateTime->value);
-		b = mktime(&in.dateTime->value);
-		a += b;
-		localtime_r(&a, &dateTime->value);
+		dateTimeFromMilliseconds1601_(*dateTime, dateTimeToMilliseconds1601_(*dateTime) + dateTimeToMilliseconds1601_(*in.dateTime));
 	};
 
 	void DateTime::minus(DateTime &in) {
-		time_t a;
-		time_t b;
-		a = mktime(&dateTime->value);
-		b = mktime(&in.dateTime->value);
-		a -= b;
-		localtime_r(&a, &dateTime->value);
+		dateTimeFromMilliseconds1601_(*dateTime, dateTimeToMilliseconds1601_(*dateTime) - dateTimeToMilliseconds1601_(*in.dateTime));
 	};
 
 	int DateTime::compare(DateTime &in) {
-		time_t a;
-		time_t b;
-		a = mktime(&dateTime->value);
-		b = mktime(&in.dateTime->value);
+		int64_t a = dateTimeToMilliseconds1601_(*dateTime);
+		int64_t b = dateTimeToMilliseconds1601_(*in.dateTime);
 		if (a < b) {
 			return -1;
 		};
@@ -133,18 +184,22 @@ namespace XYO::System {
 	};
 
 	uint64_t DateTime::toUnixTime() {
-		return (uint64_t)mktime(&dateTime->value);
+		return static_cast<uint64_t>(dateTimeToSeconds_(dateTime->value));
 	};
 
 	void DateTime::fromUnixTime(uint64_t t) {
-		time_t x = (time_t)t;
-		localtime_r(&x, &dateTime->value);
+		time_t x = static_cast<time_t>(t);
+		gmtime_r(&x, &dateTime->value);
+		dateTime->milliseconds = 0;
 	};
 
+	// Milliseconds of the local wall clock, see LOCAL TIME above
 	uint64_t DateTime::timestampInMilliseconds() {
-		struct timeval tmp;
-		gettimeofday(&tmp, nullptr);
-		return ((uint64_t)tmp.tv_sec) * ((uint64_t)1000) + (((uint64_t)tmp.tv_usec) / ((uint64_t)1000));
+		struct timeval now;
+		struct tm localTime;
+		gettimeofday(&now, nullptr);
+		localtime_r(&now.tv_sec, &localTime);
+		return static_cast<uint64_t>(dateTimeToSeconds_(localTime)) * 1000ULL + static_cast<uint64_t>(now.tv_usec) / 1000ULL;
 	};
 
 };

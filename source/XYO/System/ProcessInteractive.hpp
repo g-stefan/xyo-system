@@ -43,7 +43,7 @@ namespace XYO::System {
 			// ---
 			typedef bool (*ProcessLn)(ProcessInteractive &pInteractive, String &line, void *this_);
 			XYO_SYSTEM_EXPORT static bool run(const char *cmdLine, String &retV, bool useConPTY_ = true);
-			XYO_SYSTEM_EXPORT static bool runLn(const char *cmdLine, ProcessLn processLn, void *this_, bool useConPTY_ = true, size_t lineMaxLn = 32768);
+			XYO_SYSTEM_EXPORT static bool runLn(const char *cmdLine, ProcessLn processLn, void *this_, bool useConPTY_ = true, size_t lineMaxLn = 4096);
 	};
 
 };

@@ -33,6 +33,13 @@ namespace XYO::System {
 		};
 	};
 
+	void FileTime::activeDestructor() {
+		if (fileTime) {
+			delete fileTime;
+			fileTime = nullptr;
+		};
+	};
+
 	bool FileTime::getCreationTime(const char *file) {
 		struct stat attrib;
 		if (stat(file, &attrib)) {
@@ -99,18 +106,40 @@ namespace XYO::System {
 		return (int)(fileTime->value.tv_sec - x.fileTime->value.tv_sec);
 	};
 
+	// LOCAL TIME, NOT UTC - by design, do not change, same as DateTime.
+	// The file time is kept in UTC (as stat gives it, compare works across
+	// time zones and daylight saving changes). toUnixTime / fromUnixTime convert it
+	// to / from the local wall clock counted as if it was UTC, the same values as
+	// DateTime::toUnixTime, so DateTime::fromUnixTime(fileTime.toUnixTime()) is the
+	// local date and time of the file. The daylight saving rule of that date is used.
+
 	uint64_t FileTime::toUnixTime() {
 		if (!fileTime) {
 			return (uint64_t)0;
 		};
-		return (uint64_t)fileTime->value.tv_sec;
+		struct tm local;
+		if (localtime_r(&fileTime->value.tv_sec, &local) == nullptr) {
+			return static_cast<uint64_t>(fileTime->value.tv_sec);
+		};
+		return static_cast<uint64_t>(timegm(&local));
 	};
 
 	void FileTime::fromUnixTime(uint64_t t) {
 		if (!fileTime) {
 			fileTime = new FileTime_();
 		};
-		fileTime->value.tv_sec = t;
+		time_t localAsUTC = static_cast<time_t>(t);
+		time_t utc = localAsUTC;
+		struct tm local;
+		if (gmtime_r(&localAsUTC, &local) != nullptr) {
+			// let mktime find if daylight saving applies at that date
+			local.tm_isdst = -1;
+			time_t value = mktime(&local);
+			if (value != static_cast<time_t>(-1)) {
+				utc = value;
+			};
+		};
+		fileTime->value.tv_sec = utc;
 		fileTime->value.tv_nsec = 0;
 	};
 

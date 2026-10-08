@@ -9,7 +9,7 @@
 namespace XYO::System {
 
 	bool FileTime::isChanged(TDynamicArray<FileTime> &x) {
-		int k;
+		size_t k;
 		if (!fileTime) {
 			return true;
 		};

@@ -10,4 +10,21 @@
 // -- OS Windows
 // #define XYO_CONFIG_WINDOWS_DISABLE_CONPTY
 
+// -- I/O buffer size
+// Default size (in bytes) for internal stream / process / shell I/O buffers.
+// Override globally by defining XYO_SYSTEM_CONFIG_BUFFER_SIZE at build time,
+// or tune a single subsystem via the matching XYO_SYSTEM_*_BUFFER_SIZE macro.
+#ifndef XYO_SYSTEM_CONFIG_BUFFER_SIZE
+#	define XYO_SYSTEM_CONFIG_BUFFER_SIZE 4096
+#endif
+#ifndef XYO_SYSTEM_STREAM_BUFFER_SIZE
+#	define XYO_SYSTEM_STREAM_BUFFER_SIZE XYO_SYSTEM_CONFIG_BUFFER_SIZE
+#endif
+#ifndef XYO_SYSTEM_PROCESS_INTERACTIVE_BUFFER_SIZE
+#	define XYO_SYSTEM_PROCESS_INTERACTIVE_BUFFER_SIZE XYO_SYSTEM_CONFIG_BUFFER_SIZE
+#endif
+#ifndef XYO_SYSTEM_SHELL_BUFFER_SIZE
+#	define XYO_SYSTEM_SHELL_BUFFER_SIZE XYO_SYSTEM_CONFIG_BUFFER_SIZE
+#endif
+
 #endif

@@ -27,9 +27,14 @@ namespace XYO::System {
 			XYO_SYSTEM_EXPORT ~ShellFind();
 
 			char *name;
+			// A link (symbolic link, junction) is seen as what it points to: a link to a directory
+			// is isDirectory (the application can enter it, check and change what is in it),
+			// a link to a file is isFile. isLink is true for both.
+			// Recursive remove and move do not enter a link: they remove / move the link itself.
 			bool isFile;
 			bool isDirectory;
 			bool isReadOnly;
+			bool isLink;
 
 			inline operator bool() const {
 				return isValid_;

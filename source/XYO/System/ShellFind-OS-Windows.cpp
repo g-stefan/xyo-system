@@ -8,26 +8,52 @@
 
 #ifdef XYO_PLATFORM_OS_WINDOWS
 
-#	include <direct.h>
-#	include <io.h>
-#	include <sys/stat.h>
+#	define WIN32_LEAN_AND_MEAN
+#	include <windows.h>
+
+#	ifndef IO_REPARSE_TAG_LX_SYMLINK
+#		define IO_REPARSE_TAG_LX_SYMLINK (0xA000001DL)
+#	endif
 
 namespace XYO::System {
 
+	// FindFirstFileEx, not _findfirst: it gives the reparse tag, a link can be told apart from a directory
 	struct SShellFind_ {
-			struct _finddata_t finddata;
-			intptr_t hfind;
+			WIN32_FIND_DATAA findData;
+			HANDLE hFind;
+	};
+
+	// Only links are links: symbolic link, junction (mount point), WSL symbolic link.
+	// Other reparse points (OneDrive / cloud files, deduplication, ...) are normal files and directories.
+	static bool shellFindIsLink_(const WIN32_FIND_DATAA &findData) {
+		if ((findData.dwFileAttributes & FILE_ATTRIBUTE_REPARSE_POINT) == 0) {
+			return false;
+		};
+		return (findData.dwReserved0 == IO_REPARSE_TAG_SYMLINK) ||
+		       (findData.dwReserved0 == IO_REPARSE_TAG_MOUNT_POINT) ||
+		       (findData.dwReserved0 == IO_REPARSE_TAG_LX_SYMLINK);
+	};
+
+	static void shellFindSet_(SShellFind_ *shellFind_, char *&name, bool &isFile, bool &isDirectory, bool &isReadOnly, bool &isLink) {
+		name = shellFind_->findData.cFileName;
+		isLink = shellFindIsLink_(shellFind_->findData);
+		// a link to a directory (junction, directory symbolic link) has the directory attribute:
+		// it is seen as a directory, recursive remove / move check isLink and do not enter it
+		isDirectory = ((shellFind_->findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) != 0);
+		isFile = !isDirectory;
+		isReadOnly = (shellFind_->findData.dwFileAttributes & FILE_ATTRIBUTE_READONLY) != 0;
 	};
 
 	ShellFind::ShellFind() {
 		isFile = false;
 		isDirectory = false;
 		isReadOnly = false;
+		isLink = false;
 		isValid_ = false;
 
 		shellFind_ = new SShellFind_();
-		shellFind_->hfind = -1;
-		memset(&shellFind_->finddata, 0, sizeof(struct _finddata_t));
+		shellFind_->hFind = INVALID_HANDLE_VALUE;
+		memset(&shellFind_->findData, 0, sizeof(WIN32_FIND_DATAA));
 	};
 
 	ShellFind::~ShellFind() {
@@ -37,11 +63,8 @@ namespace XYO::System {
 
 	bool ShellFind::next() {
 		if (isValid_) {
-			if (_findnext(shellFind_->hfind, &shellFind_->finddata) == 0) {
-				name = shellFind_->finddata.name;
-				isDirectory = (shellFind_->finddata.attrib & _A_SUBDIR) == _A_SUBDIR;
-				isFile = !isDirectory;
-				isReadOnly = (shellFind_->finddata.attrib & _A_RDONLY) == _A_RDONLY;
+			if (FindNextFileA(shellFind_->hFind, &shellFind_->findData)) {
+				shellFindSet_(shellFind_, name, isFile, isDirectory, isReadOnly, isLink);
 				return true;
 			};
 			close();
@@ -50,21 +73,21 @@ namespace XYO::System {
 	};
 
 	void ShellFind::close() {
-		if (shellFind_->hfind != -1) {
-			_findclose(shellFind_->hfind);
-			shellFind_->hfind = -1L;
+		if (shellFind_->hFind != INVALID_HANDLE_VALUE) {
+			FindClose(shellFind_->hFind);
+			shellFind_->hFind = INVALID_HANDLE_VALUE;
 		};
 		isValid_ = false;
 	};
 
 	bool ShellFind::find(const char *name_) {
-		shellFind_->hfind = _findfirst(name_, &shellFind_->finddata);
-		if (shellFind_->hfind != -1L) {
+		// a previous search is still open when the object is reused
+		close();
+
+		shellFind_->hFind = FindFirstFileExA(name_, FindExInfoBasic, &shellFind_->findData, FindExSearchNameMatch, nullptr, FIND_FIRST_EX_LARGE_FETCH);
+		if (shellFind_->hFind != INVALID_HANDLE_VALUE) {
 			isValid_ = true;
-			name = shellFind_->finddata.name;
-			isDirectory = (shellFind_->finddata.attrib & _A_SUBDIR) == _A_SUBDIR;
-			isFile = !isDirectory;
-			isReadOnly = (shellFind_->finddata.attrib & _A_RDONLY) == _A_RDONLY;
+			shellFindSet_(shellFind_, name, isFile, isDirectory, isReadOnly, isLink);
 			return true;
 		};
 		return false;
